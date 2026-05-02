@@ -71,6 +71,11 @@ app.use('/api', uploadRoutes);
 // ─── Error handler (must be last) ────────────────────────────────────────────
 app.use(errorHandler);
 
+// ─── Health Check / Root Welcome ──────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.status(200).json({ success: true, message: 'BuildEst API is running successfully!' });
+});
+
 // 404 fallback
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
