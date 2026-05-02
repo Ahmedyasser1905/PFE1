@@ -34,7 +34,16 @@ import uploadRoutes from './routes/blog/upload.routes.js';
 
 const app = express();
 
-app.use(cors());
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+// React Native / APK clients don't send an Origin header (or send "null"),
+// so we must allow ALL origins. This is safe for a mobile-only backend.
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language'],
+  credentials: false,   // must be false when origin is '*'
+}));
+app.options('*', cors());   // handle OPTIONS pre-flight for all routes
 app.use(express.json());
 
 // ─── Language detection (must come before all routes) ─────────────────────────
@@ -68,17 +77,17 @@ app.use('/api/admin', adminRouter);
 app.use('/api', blogRoutes);
 app.use('/api', uploadRoutes);
 
-// ─── Error handler (must be last) ────────────────────────────────────────────
-app.use(errorHandler);
-
-// ─── Health Check / Root Welcome ──────────────────────────────────────────────
+// ─── Health Check / Root Welcome (must be BEFORE error handler) ───────────────
 app.get('/', (req, res) => {
   res.status(200).json({ success: true, message: 'BuildEst API is running successfully!' });
 });
 
-// 404 fallback
-app.use((req, res) => {
+// ─── 404 fallback (before error handler) ──────────────────────────────────────
+app.use((req, res, next) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
+
+// ─── Error handler (must be last) ────────────────────────────────────────────
+app.use(errorHandler);
 
 export default app;
