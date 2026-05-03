@@ -57,33 +57,18 @@ export const APP_CONFIG = {
 // ─── API URLs ─────────────────────────────────────────────────────────────────
 
 export const API_URLS = (() => {
-  const production = process.env.EXPO_PUBLIC_API_URL || 'https://your-backend-domain.com/api';
-  const development = process.env.EXPO_PUBLIC_DEV_API_URL || '';
-
-  // If the dev URL is not set, warn loudly in development mode so
-  // "Network Error" problems are immediately traced to misconfiguration.
-  if (__DEV__ && !development) {
-    console.warn(
-      '[Config] EXPO_PUBLIC_DEV_API_URL is not set in your .env file. ' +
-      'Network requests will fail. Set it to your machine\'s local IP ' +
-      '(e.g. http://192.168.x.x:5000/api) and restart Expo.'
-    );
-  }
-
+  const RAILWAY_URL = 'https://pfe1-production.up.railway.app/api';
   return {
     /**
      * PRODUCTION Cloud Backend URL
-     * This handles users who build the APK/AAB or run in production mode.
-     * Add the real domain to .env or keep the Vercel/Cloud URL here.
      */
-    PRODUCTION: production,
+    PRODUCTION: RAILWAY_URL,
 
     /**
      * DEVELOPMENT Backend URL
-     * Automatically targets localhost or a specific IP in development mode.
-     * If not set, falls back to localhost (works for emulators, NOT physical devices).
+     * Hardcoded to use the production URL for all development as requested.
      */
-    DEVELOPMENT: development || 'http://localhost:5000/api',
+    DEVELOPMENT: RAILWAY_URL,
   };
 })();
 

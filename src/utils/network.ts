@@ -199,55 +199,10 @@ export const detectBaseUrl = (): Promise<string> => {
       }
     } catch {}
 
-    // 2. Production: never probe, always trust env
-    if (!__DEV__) {
-      currentBaseUrl = API_URLS.PRODUCTION;
-      return currentBaseUrl;
-    }
-
-    // 3. Build candidate list (preserve insertion order, dedupe)
-    const seen = new Set<string>();
-    const candidates: string[] = [];
-    const push = (u: string | null | undefined) => {
-      if (!u) return;
-      const norm = u.replace(/\/+$/, '');
-      if (!seen.has(norm)) {
-        seen.add(norm);
-        candidates.push(norm);
-      }
-    };
-
-    // last-known good (from previous launch)
-    try {
-      push(await storage.getItem(STORAGE_KEYS.RESOLVED_API_URL));
-    } catch {}
-
-    // explicit env URLs
-    push(API_URLS.DEVELOPMENT);
-    push(API_URLS.PRODUCTION);
-
-    // hostname candidates
-    DEV_API_HOST_CANDIDATES.forEach((host) => push(toApiUrl(host)));
-
-    log('probing candidates:', candidates);
-
-    // 4. Race them in parallel
-    try {
-      const winner = await raceBaseUrls(candidates);
-      log('winner:', winner);
-      currentBaseUrl = winner;
-      try {
-        await storage.setItem(STORAGE_KEYS.RESOLVED_API_URL, winner);
-      } catch {}
-      return winner;
-    } catch (err) {
-      // 5. Nothing answered — keep whatever we had and let the request fail
-      // with a real network error. Reset the promise so the NEXT call
-      // re-probes (the network may have come back).
-      detectionPromise = null;
-      log('detection failed, falling back to', currentBaseUrl, err);
-      return currentBaseUrl;
-    }
+    // Hardcoded per user request: always use the production URL 
+    // even in development, bypassing local IP probing.
+    currentBaseUrl = API_URLS.PRODUCTION;
+    return currentBaseUrl;
   })();
 
   return detectionPromise;
