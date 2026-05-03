@@ -413,25 +413,40 @@ export function mapPlanFeatureFromAPI(raw: any): PlanFeature {
 }
 
 export function mapPlanFromAPI(raw: any): Plan {
+  // Server's getPlans returns features as an object { key: value }
+  // but admin endpoint returns features as an array [{ feature_key, feature_value_en }]
+  // Handle both shapes:
+  let features: PlanFeature[] = [];
+  if (raw.features) {
+    if (Array.isArray(raw.features)) {
+      features = raw.features.map(mapPlanFeatureFromAPI);
+    } else if (typeof raw.features === 'object') {
+      features = Object.entries(raw.features).map(([key, value]) => ({
+        featureKey: key,
+        featureValue: value as string | number | boolean,
+      }));
+    }
+  }
+
   return {
     planId: raw.plan_id || raw.id,
     nameEn: raw.name_en,
     nameAr: raw.name_ar,
-    descriptionEn: raw.description_en ?? deriveDescriptionFromFeatures(raw.features),
+    descriptionEn: raw.description_en ?? deriveDescriptionFromFeatures(features),
     descriptionAr: raw.description_ar ?? undefined,
     price: raw.price,
     duration: raw.duration,
     planTypeId: raw.plan_type_id,
     planTypeName: raw.plan_type_name,
-    features: (raw.features || []).map(mapPlanFeatureFromAPI),
+    features,
   };
 }
 
-function deriveDescriptionFromFeatures(features: any[]): string | undefined {
+function deriveDescriptionFromFeatures(features: PlanFeature[]): string | undefined {
   if (!features?.length) return undefined;
-  const projectsFeature = features.find(f => f.feature_key === 'projects_limit');
+  const projectsFeature = features.find(f => f.featureKey === 'projects_limit');
   if (projectsFeature) {
-    const v = projectsFeature.feature_value;
+    const v = projectsFeature.featureValue;
     return v === -1 || v === 'unlimited' ? 'Unlimited projects' : `Up to ${v} projects`;
   }
   return undefined;
