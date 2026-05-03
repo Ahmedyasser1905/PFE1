@@ -46,48 +46,78 @@ export function useSubscription(): UseSubscriptionResult {
       setLoading(true);
       setError(null);
 
-      // Fetch subscription first — usage endpoint requires active subscription
-      const subData = await subscriptionApi.getMine();
+      // ─── Step 1: Fetch subscription ───────────────────────────────────
+      // Free-plan users have NO subscription row in the database.
+      // The server returns 404 (getMine → notFound) or 403 (checkSubscription
+      // → NO_SUBSCRIPTION). Both are valid "no subscription" states.
+      let subData = null;
+      try {
+        subData = await subscriptionApi.getMine();
+      } catch (subErr: any) {
+        const subStatus = subErr?.status || subErr?.response?.status;
+        const subCode = subErr?.code || subErr?.data?.error?.code;
+        if (subStatus === 404 || subStatus === 403 || subCode === 'NO_SUBSCRIPTION') {
+          // Free plan user — perfectly normal, not an error
+          console.log('[useSubscription] No active subscription (free plan user)');
+          subData = null;
+        } else {
+          throw subErr; // re-throw real errors
+        }
+      }
       setSubscription(subData);
 
-      // Only fetch usage if subscription exists
-      try {
-        const usageData = await subscriptionApi.getUsage();
-        
-        // Patch usage limits using features_snapshot values.
-        // The server sends limits as strings ("10", "15") in features_snapshot.
-        // The usage endpoint may return 0 for limits — override from features_snapshot.
-        const features = subData?.features;
-        if (features && typeof features === 'object' && Object.keys(features).length > 0) {
-          const resolveLimit = (key: string, currentLimit: number): number => {
-            const val = features[key];
-            if (val === undefined || val === null) return currentLimit;
-            if (val === 'unlimited' || val === -1) return -1;
-            const parsed = parseInt(String(val), 10);
-            return isNaN(parsed) ? currentLimit : parsed;
-          };
+      // ─── Step 2: Fetch usage (only if subscription exists) ────────────
+      // The usage endpoint at /subscriptions/me/usage passes through
+      // checkSubscription middleware, which returns 403 for free plan users.
+      // We must NOT call it when subData is null.
+      if (subData) {
+        try {
+          const usageData = await subscriptionApi.getUsage();
+          
+          // Patch usage limits using features_snapshot values.
+          // The server sends limits as strings ("10", "15") in features_snapshot.
+          // The usage endpoint may return 0 for limits — override from features_snapshot.
+          const features = subData?.features;
+          if (features && typeof features === 'object' && Object.keys(features).length > 0) {
+            const resolveLimit = (key: string, currentLimit: number): number => {
+              const val = features[key];
+              if (val === undefined || val === null) return currentLimit;
+              if (val === 'unlimited' || val === -1) return -1;
+              const parsed = parseInt(String(val), 10);
+              return isNaN(parsed) ? currentLimit : parsed;
+            };
 
-          usageData.projectsLimit.limit = resolveLimit('projects_limit', usageData.projectsLimit.limit);
-          usageData.aiUsageLimit.limit = resolveLimit('ai_usage_limit', usageData.aiUsageLimit.limit);
+            usageData.projectsLimit.limit = resolveLimit('projects_limit', usageData.projectsLimit.limit);
+            usageData.aiUsageLimit.limit = resolveLimit('ai_usage_limit', usageData.aiUsageLimit.limit);
 
-          // Try all known key names for leaf/estimation limit
-          let estLimit = usageData.leafCalculationsLimit.limit;
-          for (const key of ['leaf_calculations_limit', 'estimations_limit', 'estimation_limit', 'calculations_limit']) {
-            const resolved = resolveLimit(key, -999);
-            if (resolved !== -999) { estLimit = resolved; break; }
+            // Try all known key names for leaf/estimation limit
+            let estLimit = usageData.leafCalculationsLimit.limit;
+            for (const key of ['leaf_calculations_limit', 'estimations_limit', 'estimation_limit', 'calculations_limit']) {
+              const resolved = resolveLimit(key, -999);
+              if (resolved !== -999) { estLimit = resolved; break; }
+            }
+            usageData.leafCalculationsLimit.limit = estLimit;
           }
-          usageData.leafCalculationsLimit.limit = estLimit;
-        }
 
-        setUsage(usageData);
-      } catch {
-        // Usage may fail if subscription is inactive — not a critical error
+          setUsage(usageData);
+        } catch (usageErr: any) {
+          const usageStatus = usageErr?.status || usageErr?.response?.status;
+          const usageCode = usageErr?.code || usageErr?.data?.error?.code;
+          if (usageStatus === 403 || usageCode === 'NO_SUBSCRIPTION') {
+            // Free plan — usage endpoint blocked by checkSubscription. Expected.
+            console.log('[useSubscription] Usage blocked (no subscription) — expected for free plan');
+          }
+          // Usage may fail if subscription is inactive — not a critical error
+          setUsage(null);
+        }
+      } else {
         setUsage(null);
       }
     } catch (err: any) {
       // 404 = no subscription is valid state, not an error
       const status = err?.status || err?.response?.status;
-      if (status === 404) {
+      const code = err?.code || err?.data?.error?.code;
+      if (status === 404 || status === 403 || code === 'NO_SUBSCRIPTION') {
         setSubscription(null);
         setUsage(null);
       } else {

@@ -323,7 +323,17 @@ api.interceptors.response.use(
         };
 
         // ─── Global Smart Feedback Injection ───
-        if (isSubscriptionError) {
+        // Subscription-related endpoints handle their errors locally in useSubscription.
+        // We must NOT show a global popup for expected 403/404 on these endpoints,
+        // otherwise free-plan users see error popups every time they log in.
+        const isSubscriptionEndpoint = url?.includes('/subscriptions/') || url?.includes('/projects');
+        const isSilentSubscriptionError = isSubscriptionError && isSubscriptionEndpoint;
+
+        if (isSilentSubscriptionError) {
+            // Silent — let the calling hook (useSubscription / useProjects) handle it
+            console.log(`[API] Subscription error on ${url} — handled silently by caller`);
+        } else if (isSubscriptionError) {
+            // User-initiated action that requires subscription (e.g. create project, calculate)
             showGlobalFeedback({
                 title: 'Subscription Required',
                 message: errorMessage || 'This feature is only available for premium subscribers.',
@@ -352,6 +362,9 @@ api.interceptors.response.use(
                 type: 'warning',
                 primaryText: 'OK'
             });
+        } else if (status === 404) {
+            // 404 is expected for new accounts / empty data — do NOT show popup
+            console.log(`[API] 404 suppressed for ${url}`);
         } else if (status >= 500) {
             showGlobalFeedback({
                 title: 'Server Error',
@@ -360,7 +373,7 @@ api.interceptors.response.use(
                 primaryText: 'OK'
             });
         } else {
-            // Fallback for other errors (403 forbidden, etc)
+            // Fallback for other errors (403 forbidden for role check, etc)
             showGlobalFeedback({
                 title: 'Action Failed',
                 message: errorMessage || `An error occurred (Status: ${status})`,

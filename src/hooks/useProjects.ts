@@ -34,8 +34,17 @@ export function useProjects(): UseProjectsResult {
       
       setProjects(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setError(parseError(err, 'Failed to load projects.'));
-      setIsOffline(true);
+      // 403/NO_SUBSCRIPTION is expected for free-plan users — show empty list, not an error
+      const status = err?.status || err?.response?.status;
+      const code = err?.code || err?.data?.error?.code;
+      if (status === 403 && (code === 'NO_SUBSCRIPTION' || err?.isSubscriptionError)) {
+        console.log('[useProjects] No subscription — showing empty project list');
+        setProjects([]);
+        setIsOffline(false);
+      } else {
+        setError(parseError(err, 'Failed to load projects.'));
+        setIsOffline(true);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
