@@ -5,7 +5,7 @@
  * Uses the same architecture as useProjects: fetch on mount + pull-to-refresh.
  */
 import { useState, useEffect, useCallback } from 'react';
-import { subscriptionApi } from '~/api/api';
+import { subscriptionApi, plansApi } from '~/api/api';
 import type { Subscription, Usage } from '~/api/types';
 import { parseError } from '~/utils/errorHandler';
 
@@ -62,8 +62,21 @@ export function useSubscription(): UseSubscriptionResult {
           (subStatus === 500 && (subCode === 403 || subMsg.includes('subscription')));
         if (isNoSub) {
           // Free plan user — perfectly normal, not an error
-          console.log('[useSubscription] No active subscription (free plan user)');
-          subData = null;
+          console.log('[useSubscription] No active subscription. Auto-assigning free plan...');
+          try {
+            const allPlans = await plansApi.getAll();
+            const freePlan = allPlans.find(p => p.price === 0);
+            if (freePlan) {
+              await subscriptionApi.create(freePlan.planId);
+              subData = await subscriptionApi.getMine();
+              console.log('[useSubscription] Free plan auto-assigned successfully.');
+            } else {
+              subData = null;
+            }
+          } catch (autoAssignErr) {
+            console.error('[useSubscription] Failed to auto-assign free plan:', autoAssignErr);
+            subData = null;
+          }
         } else {
           throw subErr; // re-throw real errors
         }
