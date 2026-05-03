@@ -1,9 +1,9 @@
-# Frontend Comparison: `Desktop\BUILDEST-main` vs `Desktop\Projet\BUILDEST-main`
+# Frontend Comparison: `Desktop\APEX-main` vs `Desktop\Projet\APEX-main`
 
 Comparison scope: **frontend only**. Backend (`server/`) and dependency artifacts (`node_modules/`, `.expo/`, `.git/`) are excluded.
 
-- **OLD** = `C:\Users\dz laptops\Desktop\BUILDEST-main`
-- **NEW** = `C:\Users\dz laptops\Desktop\Projet\BUILDEST-main`
+- **OLD** = `C:\Users\dz laptops\Desktop\APEX-main`
+- **NEW** = `C:\Users\dz laptops\Desktop\Projet\APEX-main`
 
 ---
 

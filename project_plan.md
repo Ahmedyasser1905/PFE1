@@ -1,4 +1,4 @@
-# Buildest Project Plan & Analysis
+# Apex Project Plan & Analysis
 
 This document provides a comprehensive overview of the current state of the project, including its existing architecture, required modifications, and known errors. It is based on a static analysis of the codebase and recent debugging history.
 

@@ -66,7 +66,7 @@ export const SplashScreenComponent = ({ onAnimationComplete }: Props) => {
                         transform: [{ translateY: translateText }]
                     }
                 ]}>
-                    <Text style={styles.brandName}>BUILDEST</Text>
+                    <Text style={styles.brandName}>APEX</Text>
                     <Text style={styles.brandSub}>BUILD SMART</Text>
                 </Animated.View>
                 <Animated.View style={[styles.barWrap, { opacity: opacityText }]}>
