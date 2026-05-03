@@ -266,14 +266,14 @@ export default function HelpScreen() {
         <View style={styles.contactCard}>
           <TouchableOpacity
             style={styles.contactRow}
-            onPress={() => Linking.openURL('mailto:support@buildest.dz')}
+            onPress={() => Linking.openURL('mailto:support@apex.dz')}
           >
             <View style={[styles.contactIcon, { backgroundColor: theme.colors.infoLight }]}>
               <Mail size={20} color={theme.colors.info} />
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactTitle}>Email Us</Text>
-              <Text style={styles.contactSub}>support@buildest.dz</Text>
+              <Text style={styles.contactSub}>support@apex.dz</Text>
             </View>
           </TouchableOpacity>
 
@@ -293,7 +293,7 @@ export default function HelpScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.version}>BuildEst © 2026 — v1.0.0</Text>
+        <Text style={styles.version}>Apex © 2026 — v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

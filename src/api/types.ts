@@ -1,5 +1,5 @@
 /**
- * BuildEst API Types
+ * Apex API Types
  * Derived from api-contract.html
  *
  * Architecture:

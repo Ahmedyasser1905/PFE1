@@ -36,7 +36,7 @@ export default function NotFoundScreen() {
                 </TouchableOpacity>
             </View>
             <View style={styles.footer}>
-                <Text style={styles.footerText}>BuildEst Error Reporting System</Text>
+                <Text style={styles.footerText}>Apex Error Reporting System</Text>
             </View>
         </SafeAreaView>
     );

@@ -50,7 +50,7 @@ export default function ChatScreen() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I am your BuildEst AI assistant. How can I help you with your construction project today?'
+      content: 'Hello! I am your Apex AI assistant. How can I help you with your construction project today?'
     }
   ]);
   const [inputText, setInputText] = useState('');

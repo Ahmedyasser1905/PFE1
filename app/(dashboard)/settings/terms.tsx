@@ -22,14 +22,14 @@ export default function TermsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>1. Acceptance of Terms</Text>
           <Text style={styles.text}>
-            By accessing and using BuildEst, you agree to be bound by these Terms of Service. If you do not agree, please do not use the application.
+            By accessing and using Apex, you agree to be bound by these Terms of Service. If you do not agree, please do not use the application.
           </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>2. Use of Services</Text>
           <Text style={styles.text}>
-            BuildEst is a construction estimation tool. Calculations provided are estimates based on user input and standard formulas. Users are responsible for verifying all final quantities.
+            Apex is a construction estimation tool. Calculations provided are estimates based on user input and standard formulas. Users are responsible for verifying all final quantities.
           </Text>
         </View>
 
@@ -43,7 +43,7 @@ export default function TermsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>4. Limitation of Liability</Text>
           <Text style={styles.text}>
-            BuildEst is not liable for any construction errors, financial losses, or project delays resulting from the use of our estimation tools.
+            Apex is not liable for any construction errors, financial losses, or project delays resulting from the use of our estimation tools.
           </Text>
         </View>
       </ScrollView>

@@ -1,5 +1,5 @@
 /**
- * BuildEst — API Response Mappers
+ * Apex — API Response Mappers
  *
  * This is the SINGLE normalization layer between backend responses and frontend domain models.
  * All snake_case → camelCase conversions happen HERE and NOWHERE ELSE.

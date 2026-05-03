@@ -31,7 +31,7 @@ export const supabase = createClient(
     },
     // Adding global fetch error handler
     global: {
-      headers: { 'x-application-name': 'buildest' },
+      headers: { 'x-application-name': 'apex' },
     },
   }
 );

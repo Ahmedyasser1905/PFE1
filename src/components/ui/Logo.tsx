@@ -52,7 +52,7 @@ export const Logo: React.FC<LogoProps> = ({
             },
           ]}
         >
-          Buildest
+          Apex
         </Text>
       )}
     </View>

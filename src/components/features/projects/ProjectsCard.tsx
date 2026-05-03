@@ -28,7 +28,7 @@ export const ProjectCard: React.FC<CardProps> = ({ project }) => {
     console.log(`[ProjectCard] "${project.name}" | imageUrl=${project.imageUrl} | resolved=${finalUri}`);
   }
 
-  const clientName = 'BuildEst Client';
+  const clientName = 'Apex Client';
   const displayDate = new Date(project.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

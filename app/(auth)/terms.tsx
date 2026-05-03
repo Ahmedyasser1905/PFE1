@@ -9,15 +9,15 @@ export default function TermsScreen() {
     const sections = [
         {
             title: '1. Acceptance of Terms',
-            content: 'By accessing and using BuildEst, you agree to bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our services.'
+            content: 'By accessing and using Apex, you agree to bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our services.'
         },
         {
             title: '2. Use of Services',
-            content: 'BuildEst provides tools for construction estimation and project management. You agree to use these services only for lawful purposes and in accordance with these Terms.'
+            content: 'Apex provides tools for construction estimation and project management. You agree to use these services only for lawful purposes and in accordance with these Terms.'
         },
         {
             title: '3. AI Usage Policy',
-            content: 'Our AI-powered estimation tools are designed to assist you. However, final verification of all calculations and estimates remains the sole responsibility of the user. BuildEst is not liable for errors in construction resulting from AI-generated data.'
+            content: 'Our AI-powered estimation tools are designed to assist you. However, final verification of all calculations and estimates remains the sole responsibility of the user. Apex is not liable for errors in construction resulting from AI-generated data.'
         },
         {
             title: '4. User Accounts',
@@ -25,11 +25,11 @@ export default function TermsScreen() {
         },
         {
             title: '5. Intellectual Property',
-            content: 'The BuildEst name, logo, and all related content and technology are the exclusive property of BuildEst. You may not reproduce or distribute any part of the service without prior written consent.'
+            content: 'The Apex name, logo, and all related content and technology are the exclusive property of Apex. You may not reproduce or distribute any part of the service without prior written consent.'
         },
         {
             title: '6. Limitation of Liability',
-            content: 'BuildEst shall not be liable for any indirect, incidental, special, or consequential damages resulting from the use or inability to use our services.'
+            content: 'Apex shall not be liable for any indirect, incidental, special, or consequential damages resulting from the use or inability to use our services.'
         }
     ];
     return (
@@ -44,7 +44,7 @@ export default function TermsScreen() {
                     <View style={styles.iconCircle}>
                         <Gavel size={32} color="white" />
                     </View>
-                    <Text style={styles.title}>BuildEst Terms of Service</Text>
+                    <Text style={styles.title}>Apex Terms of Service</Text>
                     <Text style={styles.lastUpdated}>Last updated: March 7, 2026</Text>
                 </View>
                 {sections.map((section, index) => (
@@ -55,7 +55,7 @@ export default function TermsScreen() {
                 ))}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>
-                        If you have any questions regarding these terms, please contact our legal team at legal@buildest.com
+                        If you have any questions regarding these terms, please contact our legal team at legal@apex.com
                     </Text>
                 </View>
             </ScrollView>

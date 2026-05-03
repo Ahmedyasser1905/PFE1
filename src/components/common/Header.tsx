@@ -23,7 +23,7 @@ const Header = () => {
   
   // Custom Title Mapping
   const getHeaderTitle = () => {
-    if (isRoot) return "BuildEst";
+    if (isRoot) return "Apex";
     
     if (segments.includes('projects')) {
        if (segments.includes('[id]')) return t('common.project_details');
@@ -35,7 +35,7 @@ const Header = () => {
     if (segments.includes('settings')) return t('navigation.settings');
     if (segments.includes('chat')) return t('navigation.chat');
     
-    return "BuildEst";
+    return "Apex";
   };
 
   if (!user) return null;

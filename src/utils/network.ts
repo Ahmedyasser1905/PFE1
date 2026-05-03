@@ -1,5 +1,5 @@
 /**
- * Smart base-URL detection for the BuildEst dev backend.
+ * Smart base-URL detection for the Apex dev backend.
  *
  * Why this exists
  * ───────────────

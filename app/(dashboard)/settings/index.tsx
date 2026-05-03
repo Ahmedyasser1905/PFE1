@@ -345,7 +345,7 @@ export default function ProfileSettings() {
                 </TouchableOpacity>
 
                 <View style={styles.footer}>
-                    <Text style={styles.version}>© 2026 BuildEst</Text>
+                    <Text style={styles.version}>© 2026 Apex</Text>
                 </View>
             </ScrollView>
 

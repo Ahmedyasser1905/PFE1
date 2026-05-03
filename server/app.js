@@ -79,7 +79,7 @@ app.use('/api', uploadRoutes);
 
 // ─── Health Check / Root Welcome (must be BEFORE error handler) ───────────────
 app.get('/', (req, res) => {
-  res.status(200).json({ success: true, message: 'BuildEst API is running successfully!' });
+  res.status(200).json({ success: true, message: 'Apex API is running successfully!' });
 });
 
 // ─── 404 fallback (before error handler) ──────────────────────────────────────

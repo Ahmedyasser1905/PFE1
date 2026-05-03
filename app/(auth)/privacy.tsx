@@ -13,7 +13,7 @@ export default function PrivacyScreen() {
         },
         {
             title: '2. How We Use Your Data',
-            content: 'We use your data to provide, maintain, and improve BuildEst services. Specifically, your project data is used to generate accurate estimates and technical reports using our calculation modules.'
+            content: 'We use your data to provide, maintain, and improve Apex services. Specifically, your project data is used to generate accurate estimates and technical reports using our calculation modules.'
         },
         {
             title: '3. Data Storage and Security',
@@ -44,7 +44,7 @@ export default function PrivacyScreen() {
                     <View style={styles.iconCircle}>
                         <Shield size={32} color="white" />
                     </View>
-                    <Text style={styles.title}>Your Privacy at BuildEst</Text>
+                    <Text style={styles.title}>Your Privacy at Apex</Text>
                     <Text style={styles.lastUpdated}>Last updated: March 7, 2026</Text>
                 </View>
                 {sections.map((section, index) => (
@@ -55,7 +55,7 @@ export default function PrivacyScreen() {
                 ))}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>
-                        If you have any questions about how your data is handled, please contact our privacy officer at privacy@buildest.com
+                        If you have any questions about how your data is handled, please contact our privacy officer at privacy@apex.com
                     </Text>
                 </View>
             </ScrollView>

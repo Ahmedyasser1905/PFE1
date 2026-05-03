@@ -1,5 +1,5 @@
 /**
- * BuildEst — Centralized Configuration Constants
+ * Apex — Centralized Configuration Constants
  *
  * All magic strings, storage keys, enums, and app-level config live here.
  * Never write these inline in screens or services.
@@ -14,9 +14,9 @@ export const STORAGE_KEYS = {
   USER_LANGUAGE: 'userLanguage',
   CUSTOM_SERVER_URL: 'customServerUrl',
   ONBOARDING_COMPLETED: 'hasCompletedOnboarding_v6',
-  CALCULATIONS: '@buildest_calculations',
+  CALCULATIONS: '@apex_calculations',
   TRANSLATIONS: 'app_translations',
-  RESOLVED_API_URL: '@buildest_resolved_api_url',
+  RESOLVED_API_URL: '@apex_resolved_api_url',
 } as const;
 
 // ─── Dev-mode candidate hosts for auto-detection ──────────────────────────────

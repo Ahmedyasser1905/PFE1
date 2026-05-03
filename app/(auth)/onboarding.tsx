@@ -94,7 +94,7 @@ const SLIDES = [
     {
         id: '3',
         title: 'Secure Documents',
-        subtitle: 'Store your estimates and invoices securely in the Buildest cloud.',
+        subtitle: 'Store your estimates and invoices securely in the Apex cloud.',
         icon: ShieldCheck,
     },
     {
