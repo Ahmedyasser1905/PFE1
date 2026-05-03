@@ -220,8 +220,15 @@ api.interceptors.response.use(
         // 1. Detect Auth Failure — only retry on 401 (token expired/invalid)
         // 403 = Forbidden (wrong role, no subscription) — DO NOT refresh, it won't help
         const errorCode = error.response?.data?.error?.code;
+        const errorMsg = error.response?.data?.error?.message || '';
         const is401 = error.response?.status === 401;
-        const isSubscriptionError = errorCode === 'NO_SUBSCRIPTION' || error.response?.status === 403;
+        // Server's checkSubscription uses wrong AppError arg order, so it sends
+        // HTTP 500 with body { error: { code: 403, message: '...subscription...' } }.
+        // Detect both the correct 403 and the buggy 500-with-code-403 cases.
+        const isSubscriptionError =
+            errorCode === 'NO_SUBSCRIPTION' ||
+            error.response?.status === 403 ||
+            (error.response?.status === 500 && (errorCode === 403 || errorMsg.toLowerCase().includes('subscription')));
         
         if (is401 && originalRequest && !originalRequest._retry) {
             
@@ -398,6 +405,10 @@ async function withFallback<T>(promise: Promise<T>, fallback: T): Promise<T> {
     try {
         return await promise;
     } catch (error: any) {
+        // Don't mask subscription errors — let the caller handle them properly
+        if (error.isSubscriptionError) {
+            throw error;
+        }
         if (error.isServerError) {
             console.warn('[API] Server failure detected. Using fallback data.');
             return fallback;

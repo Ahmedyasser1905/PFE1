@@ -34,10 +34,18 @@ export function useProjects(): UseProjectsResult {
       
       setProjects(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      // 403/NO_SUBSCRIPTION is expected for free-plan users — show empty list, not an error
+      // Free-plan users: server returns 403/NO_SUBSCRIPTION or 500 (AppError arg-order bug)
+      // with body { error: { code: 403, message: '...subscription...' } }
       const status = err?.status || err?.response?.status;
       const code = err?.code || err?.data?.error?.code;
-      if (status === 403 && (code === 'NO_SUBSCRIPTION' || err?.isSubscriptionError)) {
+      const msg = (err?.message || err?.data?.error?.message || '').toLowerCase();
+      const isNoSubscription =
+        err?.isSubscriptionError ||
+        code === 'NO_SUBSCRIPTION' ||
+        (status === 403) ||
+        (status === 500 && (code === 403 || msg.includes('subscription')));
+
+      if (isNoSubscription) {
         console.log('[useProjects] No subscription — showing empty project list');
         setProjects([]);
         setIsOffline(false);

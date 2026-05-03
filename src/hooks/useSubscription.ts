@@ -56,7 +56,11 @@ export function useSubscription(): UseSubscriptionResult {
       } catch (subErr: any) {
         const subStatus = subErr?.status || subErr?.response?.status;
         const subCode = subErr?.code || subErr?.data?.error?.code;
-        if (subStatus === 404 || subStatus === 403 || subCode === 'NO_SUBSCRIPTION') {
+        const subMsg = (subErr?.message || subErr?.data?.error?.message || '').toLowerCase();
+        const isNoSub = subStatus === 404 || subStatus === 403 || subCode === 'NO_SUBSCRIPTION' ||
+          subErr?.isSubscriptionError ||
+          (subStatus === 500 && (subCode === 403 || subMsg.includes('subscription')));
+        if (isNoSub) {
           // Free plan user — perfectly normal, not an error
           console.log('[useSubscription] No active subscription (free plan user)');
           subData = null;
@@ -114,14 +118,17 @@ export function useSubscription(): UseSubscriptionResult {
         setUsage(null);
       }
     } catch (err: any) {
-      // 404 = no subscription is valid state, not an error
       const status = err?.status || err?.response?.status;
       const code = err?.code || err?.data?.error?.code;
-      if (status === 404 || status === 403 || code === 'NO_SUBSCRIPTION') {
+      const msg = (err?.message || err?.data?.error?.message || '').toLowerCase();
+      const isNoSub = status === 404 || status === 403 || code === 'NO_SUBSCRIPTION' ||
+        err?.isSubscriptionError ||
+        (status === 500 && (code === 403 || msg.includes('subscription')));
+      if (isNoSub) {
         setSubscription(null);
         setUsage(null);
       } else {
-        // On network error or 500, KEEP last known subscription (do not set to null or FREE)
+        // On network error or real 500, KEEP last known subscription
         setError(parseError(err, 'Failed to load subscription info'));
         console.warn('[useSubscription] Error fetching, keeping last known state.', err);
       }
