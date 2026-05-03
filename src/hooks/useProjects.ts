@@ -42,8 +42,8 @@ export function useProjects(): UseProjectsResult {
       const isNoSubscription =
         err?.isSubscriptionError ||
         code === 'NO_SUBSCRIPTION' ||
-        (status === 403) ||
-        (status === 500 && (code === 403 || msg.includes('subscription')));
+        (status == 403) ||
+        (status == 500 && (code == 403 || msg.includes('subscription')));
 
       if (isNoSubscription) {
         console.log('[useProjects] No subscription — showing empty project list');

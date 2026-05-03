@@ -217,18 +217,22 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         
-        // 1. Detect Auth Failure — only retry on 401 (token expired/invalid)
-        // 403 = Forbidden (wrong role, no subscription) — DO NOT refresh, it won't help
-        const errorCode = error.response?.data?.error?.code;
-        const errorMsg = error.response?.data?.error?.message || '';
+        // 1. Detect Auth Failure
+        let dataObj = error.response?.data;
+        if (typeof dataObj === 'string') {
+            try { dataObj = JSON.parse(dataObj); } catch (e) {}
+        }
+        
+        const errorCode = dataObj?.error?.code;
+        const errorMsg = dataObj?.error?.message || '';
         const is401 = error.response?.status === 401;
+        
         // Server's checkSubscription uses wrong AppError arg order, so it sends
         // HTTP 500 with body { error: { code: 403, message: '...subscription...' } }.
-        // Detect both the correct 403 and the buggy 500-with-code-403 cases.
         const isSubscriptionError =
             errorCode === 'NO_SUBSCRIPTION' ||
             error.response?.status === 403 ||
-            (error.response?.status === 500 && (errorCode === 403 || errorMsg.toLowerCase().includes('subscription')));
+            (error.response?.status === 500 && (errorCode == 403 || errorMsg.toLowerCase().includes('subscription')));
         
         if (is401 && originalRequest && !originalRequest._retry) {
             
@@ -308,14 +312,8 @@ api.interceptors.response.use(
         const status = error.response?.status || 'Network Error';
         const method = originalRequest?.method?.toUpperCase() || 'UNKNOWN';
         const url = originalRequest?.url || 'unknown';
-        
-        if (status === 404) {
-            console.log(`[API] 404 Not Found (Expected for new items): [${method}] ${url}`);
-        } else {
-            logger.error('API', `FAILURE [${method}] ${url} | Status: ${status}`);
-        }
 
-        let errorMessage = error.response?.data?.error?.message || error.message || 'Unknown network error';
+        let errorMessage = dataObj?.error?.message || error.message || 'Unknown network error';
         if (error.message === 'Network Error') {
             errorMessage = 'Could not reach the server. Please check your internet connection.';
         }
@@ -324,7 +322,7 @@ api.interceptors.response.use(
             status,
             message: errorMessage,
             code: errorCode,  // e.g. 'NO_SUBSCRIPTION', 'TOKEN_EXPIRED'
-            data: error.response?.data,
+            data: dataObj,
             isServerError: status === 500 || status === 'Network Error' || !error.response,
             isSubscriptionError: isSubscriptionError ?? false,
         };
@@ -335,10 +333,17 @@ api.interceptors.response.use(
         // otherwise free-plan users see error popups every time they log in.
         const isSubscriptionEndpoint = url?.includes('/subscriptions/') || url?.includes('/projects');
         const isSilentSubscriptionError = isSubscriptionError && isSubscriptionEndpoint;
+        
+        if (status === 404) {
+            console.log(`[API] 404 Not Found (Expected for new items): [${method}] ${url}`);
+        } else if (isSilentSubscriptionError) {
+            console.log(`[API] Subscription error on ${url} — handled silently by caller`);
+        } else {
+            logger.error('API', `FAILURE [${method}] ${url} | Status: ${status}`);
+        }
 
         if (isSilentSubscriptionError) {
-            // Silent — let the calling hook (useSubscription / useProjects) handle it
-            console.log(`[API] Subscription error on ${url} — handled silently by caller`);
+            // Handled above in the log
         } else if (isSubscriptionError) {
             // User-initiated action that requires subscription (e.g. create project, calculate)
             showGlobalFeedback({
