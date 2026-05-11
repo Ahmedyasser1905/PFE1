@@ -43,7 +43,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language'],
   credentials: false,   // must be false when origin is '*'
 }));
-app.options('*', cors());   // handle OPTIONS pre-flight for all routes
+// NOTE: app.options('*', cors()) removed — Express 5 path-to-regexp v8
+// rejects '*' as an invalid pattern. The cors() middleware above already
+// handles OPTIONS pre-flight for all origins.
 app.use(express.json());
 
 // ─── Language detection (must come before all routes) ─────────────────────────

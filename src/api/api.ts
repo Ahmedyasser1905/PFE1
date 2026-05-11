@@ -43,7 +43,7 @@ import { authService } from '~/services/authService';
 import { logger } from '~/utils/errorHandler';
 import { APP_CONFIG, STORAGE_KEYS } from '~/constants/config';
 import { storage } from '~/utils/storage';
-import { detectBaseUrl } from '~/utils/network';
+import { detectBaseUrl, resetCachedBaseUrl } from '~/utils/network';
 import { showGlobalFeedback } from '~/context/FeedbackContext';
 
 // Re-export authApi from its new location to maintain compatibility
@@ -315,6 +315,10 @@ api.interceptors.response.use(
         let errorMessage = dataObj?.error?.message || error.message || 'Unknown network error';
         if (error.message === 'Network Error') {
             errorMessage = 'Could not reach the server. Please check your internet connection.';
+            // Invalidate cached URL so the next request re-probes and can discover
+            // a different server (e.g. local dev when production is down).
+            api.defaults.baseURL = undefined;
+            resetCachedBaseUrl().catch(() => {});
         }
 
         const apiError = {

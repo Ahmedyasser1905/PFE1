@@ -33,7 +33,8 @@ export const DEV_API_HOST_CANDIDATES: string[] = (() => {
   if (fromEnv.length > 0) return fromEnv;
   return [
     '192.168.137.1', // laptop Mobile-Hotspot gateway
-    '192.168.1.11',  // home Wi-Fi LAN
+    '192.168.1.7',   // current home Wi-Fi LAN
+    '192.168.1.11',  // home Wi-Fi LAN (alt)
     '192.168.1.1',
     '192.168.0.1',
     '10.0.2.2',      // Android emulator → host loopback

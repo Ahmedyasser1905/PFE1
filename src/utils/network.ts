@@ -199,8 +199,49 @@ export const detectBaseUrl = (): Promise<string> => {
       }
     } catch {}
 
-    // Hardcoded per user request: always use the production URL 
-    // even in development, bypassing local IP probing.
+    // 2. Try production URL first
+    try {
+      const prodUrl = API_URLS.PRODUCTION;
+      log('probing production:', prodUrl);
+      await probeBaseUrl(prodUrl, 4_000);
+      log('production is reachable ✓');
+      currentBaseUrl = prodUrl;
+      await storage.setItem(STORAGE_KEYS.RESOLVED_API_URL, prodUrl).catch(() => {});
+      return prodUrl;
+    } catch {
+      log('production unreachable, trying local candidates...');
+    }
+
+    // 3. Try cached URL from a previous successful detection
+    try {
+      const cached = await storage.getItem(STORAGE_KEYS.RESOLVED_API_URL);
+      if (cached && cached !== API_URLS.PRODUCTION) {
+        log('probing cached URL:', cached);
+        await probeBaseUrl(cached, 3_000);
+        log('cached URL still works ✓');
+        currentBaseUrl = cached;
+        return cached;
+      }
+    } catch {
+      log('cached URL no longer reachable');
+    }
+
+    // 4. Race all local LAN candidates
+    const candidateUrls = DEV_API_HOST_CANDIDATES.map(h => toApiUrl(h));
+    log('racing', candidateUrls.length, 'local candidates...');
+    try {
+      const winner = await raceBaseUrls(candidateUrls);
+      log('local winner:', winner);
+      currentBaseUrl = winner;
+      await storage.setItem(STORAGE_KEYS.RESOLVED_API_URL, winner).catch(() => {});
+      return winner;
+    } catch {
+      log('all local candidates failed');
+    }
+
+    // 5. Final fallback: use production URL even if it timed out
+    //    (network may recover later, and interceptor retries will help)
+    log('falling back to production URL (best effort)');
     currentBaseUrl = API_URLS.PRODUCTION;
     return currentBaseUrl;
   })();
