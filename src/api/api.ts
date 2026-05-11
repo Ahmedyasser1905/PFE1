@@ -45,7 +45,6 @@ import { APP_CONFIG, STORAGE_KEYS } from '~/constants/config';
 import { storage } from '~/utils/storage';
 import { detectBaseUrl } from '~/utils/network';
 import { showGlobalFeedback } from '~/context/FeedbackContext';
-import { Import } from 'lucide-react-native';
 
 // Re-export authApi from its new location to maintain compatibility
 export { authApi } from './authApi';
@@ -462,10 +461,8 @@ listProjects: async (): Promise<Project[]> => {
     return mapProjectsFromAPI(raw);
 },
 
-uploadProjectImage: async (formData: FormData) => {
-    const response = await api.post('/projects/upload-image', formData);
-    return response.data;
-},
+// NOTE: uploadProjectImage removed — server handles image upload via multer
+// directly in POST /projects. Use createProject with FormData instead.
 
 getProject: async (id: string): Promise<Project> => {
     const raw: RawProject = await api.get(`/projects/${id}`);

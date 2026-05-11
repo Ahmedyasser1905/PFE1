@@ -27,15 +27,27 @@ export interface RawUser {
   id: string;
   name: string;
   email: string;
-  role: 'CLIENT';
+  role: 'CLIENT' | 'ADMIN' | string;
   avatar_url?: string;
   language?: 'en' | 'ar';
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | string;
+  created_at?: string;
 }
 
 export interface AuthResponse {
   user: RawUser;
   accessToken: string;
   refreshToken: string;
+  subscription?: AuthSubscriptionSnapshot | null;
+}
+
+/** Lightweight subscription info embedded in login/register responses */
+export interface AuthSubscriptionSnapshot {
+  subscription_id: string;
+  plan_id: string;
+  plan_name: string;
+  end_date: string;
+  features_snapshot: Record<string, any>;
 }
 
 // 🗂️ Categories (Raw)
@@ -206,13 +218,32 @@ export interface AIFAQResponse {
 }
 
 // 💳 Subscription (Raw)
+// Matches server getMySubscriptionForClient response shape:
+// { subscription_id, status, features_snapshot, plan: { name, price, duration }, billingCycle, period: { start, end } }
 export interface RawSubscription {
-  plan_name: string;
-  plan_type: string | null;
-  subscription_status: string;
-  start_date: string;
-  end_date: string;
-  plan_id: string | null;
+  subscription_id?: string;
+  status?: string;
+  features_snapshot?: Record<string, any>;
+  plan?: {
+    name?: string;
+    price?: number;
+    duration?: number;
+    type?: string;
+    plan_type?: string;
+  };
+  billingCycle?: string;
+  period?: {
+    start?: string;
+    end?: string;
+  };
+  // Legacy fields (kept for backward compat with older responses)
+  plan_name?: string;
+  plan_type?: string | null;
+  subscription_status?: string;
+  start_date?: string;
+  end_date?: string;
+  plan_id?: string | null;
+  is_active?: boolean;
 }
 
 export interface RawUsage {
@@ -259,9 +290,11 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'CLIENT';
+  role: 'CLIENT' | 'ADMIN' | string;
   avatarUrl?: string;
   language?: 'en' | 'ar';
+  status?: string;
+  createdAt?: string;
 }
 
 // 🗂️ Category (Clean)

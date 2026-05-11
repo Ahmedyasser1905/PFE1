@@ -5,14 +5,18 @@ const CLIENT_ROLE = 'CLIENT';
 
 const ADMIN_USER_STATUS_OPTIONS = [
   { value: 'ALL', label: 'All statuses' },
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'INACTIVE', label: 'Inactive' },
+  { value: 'active', label: 'Active' },
+  { value: 'banned', label: 'Banned' },
+  { value: 'suspended', label: 'Suspended' },
+  { value: 'inactive', label: 'Inactive' },
 ];
 
 function normaliseUserStatus(value) {
-  const normalised = String(value || 'ACTIVE').trim().toUpperCase();
-  if (normalised === 'ACTIVE') return 'ACTIVE';
-  return 'INACTIVE';
+  const normalised = String(value || 'ACTIVE').trim().toLowerCase();
+  if (['active', 'banned', 'suspended', 'inactive'].includes(normalised)) {
+    return normalised;
+  }
+  return 'active';
 }
 
 function normalisePlanType(value) {
@@ -57,7 +61,7 @@ function buildUsersWhereClause({ status, search, plan }) {
 
   if (status && status !== 'ALL') {
     conditions.push(
-      sql`UPPER(u.status::text) = ${status.toUpperCase()}`
+      sql`LOWER(COALESCE(NULLIF(u.status, ''), 'ACTIVE')) = ${status}`
     );
   }
 
@@ -184,11 +188,11 @@ export async function getDashboardStats() {
   };
 }
 
-export async function getSubscribersAdmin({ status, search, page = 1, limit = 8 }) {
+export async function getSubscribersAdmin({ status, search, page = 1, limit = 20 }) {
   const offset = (page - 1) * limit;
   const conditions = [];
 
-  if (status && status !== 'ALL') conditions.push(sql`UPPER(s.status::text) = ${status.toUpperCase()}`);
+  if (status && status !== 'ALL') conditions.push(sql`s.status = ${status}`);
   if (search) {
     const like = `%${search}%`;
     conditions.push(sql`(u.name ILIKE ${like} OR u.email ILIKE ${like})`);
@@ -260,7 +264,7 @@ export async function getSubscribersAdmin({ status, search, page = 1, limit = 8 
   };
 }
 
-export async function getUsersAdmin({ status, plan, search, page = 1, limit = 8 }) {
+export async function getUsersAdmin({ status, plan, search, page = 1, limit = 20 }) {
   const offset = (page - 1) * limit;
   const whereClause = buildUsersWhereClause({ status, search, plan });
   const usersFrom = sql`
@@ -524,7 +528,7 @@ export async function getUserAdminById(userId) {
 }
 
 export async function updateAdminUserStatus({ userId, status }) {
-  const nextStatus = String(status || 'ACTIVE').trim().toUpperCase();
+  const nextStatus = String(status || 'active').trim().toUpperCase();
   const rows = await sql`
     UPDATE users
     SET

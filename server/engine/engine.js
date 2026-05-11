@@ -22,7 +22,6 @@ export class CalculationEngine {
     const fieldDefs = await this.repo.getFieldDefinitions(selectedFormula.formula_id);
 
     // ── 3. Build vars — resolves field UUIDs → variable_name symbols ──────
-    //       Now type-aware: NUMBER / BOOLEAN / SELECT (see buildInitialVars)
     const vars = this.buildInitialVars(input.field_values, fieldDefs);
 
     // ── 4. Evaluate selected NON_MATERIAL formula ─────────────────────────
@@ -62,32 +61,19 @@ export class CalculationEngine {
     const skippedMaterials = [];
 
     for (const mat of materials) {
-      // Gracefully skip if the material's formula doesn't exist in the DB
-      let mf;
-      try {
-        mf = await this.repo.getFormula(mat.formula_id);
-        this.assertFormulaType(mf, 'MATERIAL');
-      } catch (e) {
-        skippedMaterials.push({
-          material_id:      mat.material_id,
-          material_name:    mat.material_name,
-          material_name_en: mat.material_name_en,
-          material_name_ar: mat.material_name_ar,
-          reason:           e.message,
-        });
-        continue;
-      }
+      const mf = await this.repo.getFormula(mat.formula_id);
+      this.assertFormulaType(mf, 'MATERIAL');
 
       let rawQty;
       try {
         rawQty = this.evalExpr(mf.expression, vars, mf);
       } catch (e) {
         skippedMaterials.push({
-          material_id:      mat.material_id,
-          material_name:    mat.material_name,
+          material_id:     mat.material_id,
+          material_name:   mat.material_name,
           material_name_en: mat.material_name_en,
           material_name_ar: mat.material_name_ar,
-          reason:           e.message,
+          reason:          e.message,
         });
         continue;
       }
@@ -119,62 +105,6 @@ export class CalculationEngine {
       });
     }
 
-    // ── 7b. Evaluate service formulas ─────────────────────────────────
-    const services = await this.repo.getServicesForCategory(input.category_id);
-    const svcLines = [];
-    const skippedServices = [];
-
-    for (const svc of services) {
-      if (!svc.formula_id) {
-        skippedServices.push({ service_id: svc.service_id,
-          service_name: svc.service_name, reason: 'No formula linked' });
-        continue;
-      }
-
-      let sf;
-      try {
-        sf = await this.repo.getFormula(svc.formula_id);
-        // Only accept SERVICE formula_type
-        if (sf.formula_type !== 'SERVICE')
-          throw new EngineError(`Wrong type: ${sf.formula_type}`);
-      } catch(e) {
-        skippedServices.push({ service_id: svc.service_id,
-          service_name: svc.service_name, reason: e.message }); continue;
-      }
-
-      let rawQty;
-      try { rawQty = this.evalExpr(sf.expression, vars, sf); }
-      catch(e) {
-        skippedServices.push({ service_id: svc.service_id,
-          service_name: svc.service_name, reason: e.message }); continue;
-      }
-
-      if (rawQty < 0) throw new EngineError(
-        `Negative qty for service "${svc.service_name}" (${rawQty})`);
-
-      const unit = svc.unit_id
-        ? await this.repo.getUnit(svc.unit_id)
-        : { symbol: svc.unit_en || '' };
-
-      const sub_dzd = this.r2(
-        rawQty * svc.unit_price * latestRate * adminMarketFactor);
-
-      svcLines.push({
-        service_id:         svc.service_id,
-        service_name:       svc.service_name,
-        service_name_en:    svc.service_name_en,
-        service_name_ar:    svc.service_name_ar,
-        quantity:           this.r4(rawQty),
-        unit_symbol:        unit.symbol,
-        unit_price:         svc.unit_price,
-        unit_price_snapshot:svc.unit_price,
-        equipment_cost:     svc.equipment_cost,
-        manpower_cost:      svc.manpower_cost,
-        install_labor_price:svc.install_labor_price,
-        sub_total:          sub_dzd,
-      });
-    }
-
     // ── 8. Roll up ────────────────────────────────────────────────────────
     const primSub = this.r2(
       matLines.filter(m => m.material_type === 'PRIMARY')
@@ -184,7 +114,6 @@ export class CalculationEngine {
       matLines.filter(m => m.material_type === 'ACCESSORY')
               .reduce((s, m) => s + m.sub_total, 0)
     );
-    const svcSub = this.r2(svcLines.reduce((s, sv) => s + sv.sub_total, 0));
 
     return {
       category_id:              input.category_id,
@@ -196,10 +125,7 @@ export class CalculationEngine {
       skipped_materials:        skippedMaterials,
       subtotal_primary:         primSub,
       subtotal_accessory:       accSub,
-      service_lines:            svcLines,
-      skipped_services:         skippedServices,
-      subtotal_services:        svcSub,
-      total_cost:               this.r2(primSub + accSub + svcSub),
+      total_cost:               this.r2(primSub + accSub),
       computed_at:              new Date().toISOString(),
     };
   }
@@ -219,9 +145,8 @@ export class CalculationEngine {
         formula_id:      formula.formula_id,
         formula_version: formula.version,
         output_key:      key,
-        namespaced_key:  `${namespace}.${key}`,
-        output_label_en: formula.name_en,
-        output_label_ar: formula.name_ar,
+        namespaced_key:  `${namespace}.${key}`, // Inject namespace
+        output_label:    formula.name,
         value:           this.r4(value),
         unit_symbol:     unit.symbol,
       }];
@@ -237,9 +162,8 @@ export class CalculationEngine {
         formula_id:      formula.formula_id,
         formula_version: formula.version,
         output_key:      out.output_key,
-        namespaced_key:  `${namespace}.${out.output_key}`,
-        output_label_en: out.output_label_en,
-        output_label_ar: out.output_label_ar,
+        namespaced_key:  `${namespace}.${out.output_key}`, // Inject namespace
+        output_label:    out.output_label,
         value:           this.r4(value),
         unit_symbol:     unit.symbol,
       });
@@ -256,67 +180,24 @@ export class CalculationEngine {
   }
 
   /**
-   * Builds the variable context from field_values, with type-aware coercion.
-   *
-   * Each field's field_type_name (resolved via LEFT JOIN in the repository)
-   * determines how the raw incoming value is coerced:
-   *
-   *   NUMBER  (default) — must already be a finite number, identical to the
-   *                        original behaviour.
-   *
-   *   BOOLEAN           — accepts true/false (JS boolean) or 1/0 (number) or
-   *                        the strings "true"/"false". Coerced to 1 or 0 so
-   *                        formula expressions can do arithmetic on it,
-   *                        e.g.  if(has_basement == 1, depth * 0.3, 0).
-   *
-   *   SELECT            — the frontend sends the numeric value of the chosen
-   *                        option (stored per-option in default_value JSON).
-   *                        Validated as a finite number so downstream
-   *                        expressions receive a clean numeric variable.
-   *
-   * field_type_name is matched with a contains-check so minor naming
-   * differences in the DB ("Boolean Toggle", "BOOLEAN", etc.) all work.
-   *
-   * The original UUID key is always kept alongside the symbol key so
-   * source_formula_id chaining lookups continue to function unchanged.
+   * Builds the variable context from field_values.
+   * field_values keys are field UUIDs from the frontend.
+   * We look up each field's variable_name (e.g. "L", "l", "h")
+   * so formula expressions like "L * l * h" resolve correctly.
+   * The original UUID key is also kept for chaining lookups.
    */
   buildInitialVars(fv, fieldDefs) {
     const vars = {};
-
     for (const [k, v] of Object.entries(fv)) {
-      const field      = fieldDefs.find(f => f.field_id === k);
-      const symbol     = field?.variable_name || k;
-      const typeName   = (field?.field_type_name || 'number'); // already lowercased by repo
+      if (typeof v !== 'number' || isNaN(v))
+        throw new EngineError(`Invalid value for field "${k}"`);
 
-      let numVal;
+      const field  = fieldDefs.find(f => f.field_id === k);
+      const symbol = field?.variable_name || k;
 
-      if (typeName.includes('bool')) {
-        // ── BOOLEAN ───────────────────────────────────────────────────────
-        if (v === true  || v === 1 || v === 'true')  numVal = 1;
-        else if (v === false || v === 0 || v === 'false') numVal = 0;
-        else throw new EngineError(
-          `Field "${k}" is BOOLEAN — expected true/false/1/0, got "${v}"`
-        );
-
-      } else if (typeName.includes('select')) {
-        // ── SELECT ────────────────────────────────────────────────────────
-        // The frontend sends the numeric value of the chosen option.
-        numVal = Number(v);
-        if (!isFinite(numVal)) throw new EngineError(
-          `Field "${k}" is SELECT — option value must be a number, got "${v}"`
-        );
-
-      } else {
-        // ── NUMBER (default) ──────────────────────────────────────────────
-        if (typeof v !== 'number' || !isFinite(v))
-          throw new EngineError(`Invalid value for field "${k}": expected a finite number, got "${v}"`);
-        numVal = v;
-      }
-
-      vars[symbol] = numVal; // "L" = 5   — used in expressions
-      vars[k]      = numVal; // uuid  = 5 — kept for chaining
+      vars[symbol] = v;  // "L" = 5   — used in expressions
+      vars[k]      = v;  // uuid  = 5 — kept for chaining
     }
-
     return vars;
   }
 

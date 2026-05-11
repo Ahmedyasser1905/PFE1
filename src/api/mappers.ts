@@ -129,13 +129,18 @@ export function mapCategoriesFromAPI(raw: RawCategory[]): Category[] {
  * - avatar_url → avatarUrl
  */
 export function mapUserFromAPI(raw: RawUser): User {
+  if (!raw) {
+    return { id: '', name: 'Unknown', email: '', role: 'CLIENT' };
+  }
   return {
-    id: raw.id,
-    name: raw.name,
-    email: raw.email,
-    role: raw.role,
+    id: raw.id || '',
+    name: raw.name || 'Unknown',
+    email: raw.email || '',
+    role: raw.role || 'CLIENT',
     avatarUrl: raw.avatar_url,
     language: raw.language,
+    status: raw.status,
+    createdAt: raw.created_at,
   };
 }
 
@@ -342,7 +347,20 @@ export function mapLeafDetailFromAPI(raw: RawLeafDetail): LeafDetail {
 
 // ─── Subscription & Usage Mappers ─────────────────────────────────────────────
 
-export function mapSubscriptionFromAPI(raw: any): Subscription {
+export function mapSubscriptionFromAPI(raw: RawSubscription | any): Subscription {
+  if (!raw) {
+    return {
+      planName: 'Free Plan',
+      planType: null,
+      subscriptionStatus: 'INACTIVE',
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
+      planId: null,
+      isActive: false,
+      features: {},
+    };
+  }
+
   console.log("SUB RESPONSE:", raw);
 
   // Server shape after envelope unwrap:
@@ -385,10 +403,21 @@ export function mapSubscriptionFromAPI(raw: any): Subscription {
 }
 
 export function mapUsageFromAPI(raw: any): Usage {
+  if (!raw) {
+    return {
+      projectsLimit: { used: 0, limit: 0 },
+      aiUsageLimit: { used: 0, limit: 0 },
+      leafCalculationsLimit: { used: 0, limit: 0 },
+    };
+  }
+
   const mapUsageItem = (item: any, fallbackUsed?: number, fallbackLimit?: number) => {
+    if (!item) {
+      return { used: fallbackUsed ?? 0, limit: fallbackLimit ?? 0 };
+    }
     const used = item?.used ?? item?.used_calculations ?? item?.usage ?? fallbackUsed ?? 0;
     const limit = item?.unlimited ? -1 : (item?.limit ?? item?.max_calculations ?? fallbackLimit ?? 0);
-    return { used, limit };
+    return { used: Number(used) || 0, limit: typeof limit === 'number' ? limit : (parseInt(String(limit)) || 0) };
   };
 
   return {

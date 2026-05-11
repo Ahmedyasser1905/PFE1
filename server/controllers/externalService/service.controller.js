@@ -3,28 +3,17 @@ import * as serviceService from '../../services/externalService/service.service.
 import { ok, handleError, notFound } from '../../utils/http.js';
 import { ValidationError } from '../../utils/AppError.js';
 
-// 1. Get all services (paginated, with search)
+// 1. Get all services
 export const getAllServices = async (req, res) => {
     try {
-        const { search, page, limit } = req.query;
-        const result = await serviceService.getAllServices({ search, page, limit });
-        ok(res, result);
+        const services = await serviceService.getAllServices();
+        ok(res, services);
     } catch (err) {
         handleError(res, err);
     }
 };
 
-// 2. Get service formulas (for admin formula selector)
-export const getServiceFormulas = async (req, res) => {
-    try {
-        const formulas = await serviceService.getServiceFormulas();
-        ok(res, formulas);
-    } catch (err) {
-        handleError(res, err);
-    }
-};
-
-// 3. Add new service
+// 2. Add new service
 export const addService = async (req, res) => {
     try {
         const newService = req.body;
@@ -40,7 +29,7 @@ export const addService = async (req, res) => {
     }
 };
 
-// 4. Update service
+// 3. Update service
 export const updateService = async (req, res) => {
     try {
         const { id } = req.params;
@@ -60,7 +49,7 @@ export const updateService = async (req, res) => {
     }
 };
 
-// 5. Delete service
+// 4. Delete service
 export const deleteService = async (req, res) => {
     try {
         const { id } = req.params;
@@ -74,4 +63,4 @@ export const deleteService = async (req, res) => {
     } catch (err) {
         handleError(res, err);
     }
-};
+};

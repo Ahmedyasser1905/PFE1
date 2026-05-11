@@ -4,6 +4,9 @@ const requests = {};
 
 export const rateLimit = (limit = 10, windowMs = 60000) => {
   return (req, res, next) => {
+    if (!req.user || !req.user.userId) {
+      return next(new AppError('Unauthorized', 'UNAUTHORIZED', 401));
+    }
     const userId = req.user.userId;
 
     if (!requests[userId]) {
