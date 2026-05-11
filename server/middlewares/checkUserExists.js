@@ -7,9 +7,6 @@ import { NotFoundError } from '../utils/AppError.js';
  */
 export default async function checkUserExists(req, res, next) {
   try {
-    if (!req.user || !req.user.userId) {
-      return next(new NotFoundError('User not found'));
-    }
     const rows = await sql`SELECT id FROM users WHERE id = ${req.user.userId} LIMIT 1`;
     if (rows.length === 0) {
       return next(new NotFoundError('User not found'));

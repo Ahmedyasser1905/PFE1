@@ -27,6 +27,10 @@ export async function getUnits() {
   return sql`SELECT unit_id, name_en, name_ar, symbol FROM units ORDER BY symbol`;
 }
 
+export async function getFieldTypes() {
+  return sql`SELECT field_type_id, name_en, name_ar FROM field_types ORDER BY name_en`;
+}
+
 // ── Admin category tree ───────────────────────────────────────────────────────
 
 export async function getAdminTree() {
@@ -41,12 +45,13 @@ export async function getAdminTree() {
 
 // ── Leaf details ──────────────────────────────────────────────────────────────
 // Returns:
-//   formulas         – NON_MATERIAL formulas (each with fields[] and outputs[])
+//   formulas          – NON_MATERIAL formulas (each with fields[] and outputs[])
 //   material_formulas – MATERIAL formulas (expression only, no fields/outputs)
+//   service_formulas  – SERVICE formulas (expression only, for service quantity computation)
 //   configs, coefficients
 
 export async function getLeafDetails(category_id) {
-  const [[category], formulas, materialFormulas, configs, coefficients] = await Promise.all([
+  const [[category], formulas, materialFormulas, serviceFormulas, configs, coefficients] = await Promise.all([
 
     sql`
       SELECT category_id, parent_id, category_level, name_en, name_ar,
@@ -81,7 +86,8 @@ export async function getLeafDetails(category_id) {
                 'sort_order',        fd.sort_order,
                 'unit_id',           fd.unit_id,
                 'unit_symbol',       fu.symbol,
-                'source_formula_id', fd.source_formula_id
+                'source_formula_id', fd.source_formula_id,
+                'field_type_id',     fd.field_type_id
               ) ORDER BY fd.sort_order
             ) FILTER (WHERE fd.field_id IS NOT NULL),
             '[]'::json
@@ -136,6 +142,24 @@ export async function getLeafDetails(category_id) {
       ORDER  BY f.name_en
     `,
 
+    // SERVICE formulas — expression-only, linked to service_config rows
+    sql`
+      SELECT
+        f.formula_id,
+        f.name_en,
+        f.name_ar,
+        f.expression,
+        f.formula_type,
+        f.version,
+        f.output_unit          AS output_unit_id,
+        u.symbol               AS output_unit_symbol
+      FROM   formulas f
+      LEFT JOIN units u ON u.unit_id = f.output_unit
+      WHERE  f.category_id  = ${category_id}
+        AND  f.formula_type = 'SERVICE'
+      ORDER  BY f.name_en
+    `,
+
     sql`
       SELECT config_id, name, description
       FROM   material_config
@@ -154,7 +178,7 @@ export async function getLeafDetails(category_id) {
   ]);
 
   if (!category) return null;
-  return { ...category, formulas, material_formulas: materialFormulas, configs, coefficients };
+  return { ...category, formulas, material_formulas: materialFormulas, service_formulas: serviceFormulas, configs, coefficients };
 }
 
 // ── Category CRUD ─────────────────────────────────────────────────────────────
@@ -299,12 +323,12 @@ export async function createField(formula_id, dto) {
   const [row] = await sql`
     INSERT INTO field_definitions
       (formula_id, label_en, label_ar, variable_name, unit_id,
-       required, default_value, source_formula_id, sort_order)
+       required, default_value, source_formula_id, field_type_id, sort_order)
     VALUES
       (${formula_id}, ${dto.label_en}, ${dto.label_ar ?? ''},
        ${dto.variable_name}, ${dto.unit_id ?? null}, ${required},
        ${dto.default_value ?? null}, ${dto.source_formula_id ?? null},
-       ${dto.sort_order ?? 0})
+       ${dto.field_type_id ?? null}, ${dto.sort_order ?? 0})
     RETURNING *
   `;
   return row;
@@ -319,6 +343,7 @@ export async function updateField(field_id, dto) {
   if ('required'          in dto) updates.required          = dto.required;
   if ('default_value'     in dto) updates.default_value     = dto.default_value;
   if ('source_formula_id' in dto) updates.source_formula_id = dto.source_formula_id;
+  if ('field_type_id'     in dto) updates.field_type_id     = dto.field_type_id;
   if ('sort_order'        in dto) updates.sort_order        = dto.sort_order;
   if (updates.source_formula_id) updates.required = false;
   if (!Object.keys(updates).length) return null;

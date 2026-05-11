@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Apex",
-    "slug": "apex",
+    "slug": "buildest-auth",
     "version": "1.0.0",
     "scheme": "apex",
     "newArchEnabled": false,
