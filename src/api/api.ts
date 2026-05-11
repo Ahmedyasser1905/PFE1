@@ -30,6 +30,7 @@ import {
   mapProjectsFromAPI,
   mapCategoriesFromAPI,
   mapCategoryFromAPI,
+  mapCategoryTreeFromAPI,
   mapLeafDetailFromAPI,
   mapCalculationResultFromAPI,
   mapEstimationFromAPI,
@@ -449,6 +450,10 @@ export const estimationApi = {
     getCategories: async (): Promise<Category[]> => {
         const raw = await withFallback<RawCategory[]>(api.get('/categories'), MOCK_CATEGORIES);
         return mapCategoriesFromAPI(raw);
+    },
+    getCategoryTree: async (): Promise<Category[]> => {
+        const raw: RawCategory[] = await api.get('/categories/tree');
+        return mapCategoryTreeFromAPI(raw);
     },
     getCategoryChildren: async (id: string): Promise<Category[]> => {
         const raw: RawCategory[] = await api.get(`/categories/${id}/children`);

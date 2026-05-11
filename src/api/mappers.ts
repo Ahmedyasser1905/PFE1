@@ -109,17 +109,30 @@ export function mapProjectsFromAPI(raw: RawProject[]): Project[] {
 export function mapCategoryFromAPI(raw: RawCategory): Category {
   return {
     categoryId: raw.category_id,
-    parentId: raw.parent_id,
+    parentId: raw.parent_id ?? null,
     categoryLevel: raw.category_level,
     nameEn: raw.name_en,
     nameAr: raw.name_ar,
+    descriptionEn: raw.description_en ?? null,
+    descriptionAr: raw.description_ar ?? null,
     icon: raw.icon,
-    sortOrder: raw.sort_order,
+    sortOrder: raw.sort_order ?? 0,
+    children: Array.isArray(raw.children)
+      ? raw.children.map(mapCategoryFromAPI)
+      : undefined,
   };
 }
 
 export function mapCategoriesFromAPI(raw: RawCategory[]): Category[] {
   return Array.isArray(raw) ? raw.map(mapCategoryFromAPI) : [];
+}
+
+/**
+ * Maps the full tree response from /categories/tree.
+ * Each node includes a `children` array (recursively mapped).
+ */
+export function mapCategoryTreeFromAPI(raw: RawCategory[]): Category[] {
+  return mapCategoriesFromAPI(raw);
 }
 
 // ─── User Mapper ──────────────────────────────────────────────────────────────

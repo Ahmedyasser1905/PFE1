@@ -59,8 +59,11 @@ export interface RawCategory {
   category_level: CategoryLevel;
   name_en: string;
   name_ar: string;
+  description_en?: string | null;
+  description_ar?: string | null;
   icon: string | null;
   sort_order: number;
+  children?: RawCategory[];
 }
 
 export interface RawLeafDetail extends RawCategory {
@@ -304,8 +307,11 @@ export interface Category {
   categoryLevel: CategoryLevel;
   nameEn: string;
   nameAr: string;
+  descriptionEn?: string | null;
+  descriptionAr?: string | null;
   icon: string | null;
   sortOrder: number;
+  children?: Category[];
 }
 
 export interface LeafDetail extends Category {
