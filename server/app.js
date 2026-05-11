@@ -43,7 +43,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language'],
   credentials: false,   // must be false when origin is '*'
 }));
-app.options('*', cors());   // handle OPTIONS pre-flight for all routes
 app.use(express.json());
 
 // ─── Language detection (must come before all routes) ─────────────────────────
@@ -80,6 +79,10 @@ app.use('/api', uploadRoutes);
 // ─── Health Check / Root Welcome (must be BEFORE error handler) ───────────────
 app.get('/', (req, res) => {
   res.status(200).json({ success: true, message: 'Apex API is running successfully!' });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ success: true, message: 'Server is healthy' });
 });
 
 // ─── 404 fallback (before error handler) ──────────────────────────────────────
