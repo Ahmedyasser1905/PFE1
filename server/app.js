@@ -43,7 +43,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language'],
   credentials: false,   // must be false when origin is '*'
 }));
-app.options('*', cors());   // handle OPTIONS pre-flight for all routes
 app.use(express.json());
 
 // ─── Language detection (must come before all routes) ─────────────────────────
