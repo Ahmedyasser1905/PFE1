@@ -269,12 +269,8 @@ export default function ProjectDetailScreen() {
                       style={styles.mainCatCard}
                       onPress={() =>
                         router.push({
-                          pathname: '/(dashboard)/projects/[id]/categories',
-                          params: {
-                            id,
-                            parentId: cat.categoryId,
-                            title: cat.nameEn,
-                          },
+                          pathname: '/(dashboard)/projects/[id]/category/[categoryId]',
+                          params: { id, categoryId: cat.categoryId },
                         })
                       }
                     >

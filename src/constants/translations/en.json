@@ -96,16 +96,6 @@
     "no_projects_found": "No projects found",
     "retry_sync": "Retry Sync",
     "failed_sync": "Failed to sync projects"
-  },
-  "categories": {
-    "title": "Categories",
-    "root_subtitle": "Select a construction domain to explore.",
-    "child_subtitle": "Browse items in this category.",
-    "empty": "No categories available",
-    "empty_hint": "Categories are managed by the administrator."
-  },
-  "projects": {
-    "error_loading": "Failed to load project"
   }
 }
 

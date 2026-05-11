@@ -4,18 +4,15 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   Pressable,
+  TextInput,
   ActivityIndicator,
   RefreshControl,
-  ViewStyle,
-  TextStyle,
 } from 'react-native';
 import { Feather, MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { estimationApi } from '~/api/api';
-import { useCategories } from '~/hooks/useCategories';
-import { useLanguage } from '~/context/LanguageContext';
 import { theme } from '~/constants/theme';
 import type { Category, SavedLeafCalculation } from '~/api/types';
 import { logger, parseError } from '~/utils/errorHandler';
@@ -44,27 +41,20 @@ const resolveIcon = (icon: string | null): React.ReactNode => {
     crane: <FontAwesome5 name="truck-loading" size={ICON_SIZE} color={ICON_COLOR} />,
     wall: <MaterialIcons name="view-column" size={ICON_SIZE} color={ICON_COLOR} />,
     wood: <FontAwesome5 name="tree" size={ICON_SIZE} color={ICON_COLOR} />,
-    concrete: <FontAwesome5 name="cubes" size={ICON_SIZE} color={ICON_COLOR} />,
-    pipe: <FontAwesome5 name="tint" size={ICON_SIZE} color={ICON_COLOR} />,
-    paint: <FontAwesome5 name="paint-roller" size={ICON_SIZE} color={ICON_COLOR} />,
   };
   if (icon && map[icon]) return map[icon];
   return <Feather name="grid" size={ICON_SIZE} color={ICON_COLOR} />;
 };
 
 // ─────────────────────────────────────────────
-// CATEGORY CARD COMPONENT
+// COMPACT CATEGORY CARD (RESTORED STYLE)
 // ─────────────────────────────────────────────
 const CategoryCard: React.FC<{
   item: Category;
   onPress: (item: Category) => void;
   calcCount: number;
-  isArabic: boolean;
-}> = React.memo(({ item, onPress, calcCount, isArabic }) => {
+}> = React.memo(({ item, onPress, calcCount }) => {
   const isLeaf = item.categoryLevel === 'LEAF';
-  const hasChildren = item.children && item.children.length > 0;
-  const displayName = isArabic ? item.nameAr : item.nameEn;
-  const subName = isArabic ? item.nameEn : item.nameAr;
 
   return (
     <Pressable
@@ -74,52 +64,19 @@ const CategoryCard: React.FC<{
       <View style={styles.iconContainer}>
         {resolveIcon(item.icon)}
       </View>
-      <View style={[styles.cardContent, isArabic && styles.rtlContent]}>
-        <Text style={[styles.cardTitle, isArabic && styles.rtlText]}>{displayName}</Text>
-        <Text style={[styles.cardSubtitle, isArabic && styles.rtlText]}>{subName}</Text>
-        {item.descriptionEn && !isArabic && (
-          <Text style={styles.cardDescription} numberOfLines={1}>{item.descriptionEn}</Text>
-        )}
-        {item.descriptionAr && isArabic && (
-          <Text style={[styles.cardDescription, styles.rtlText]} numberOfLines={1}>{item.descriptionAr}</Text>
-        )}
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle}>{item.nameEn}</Text>
+        <Text style={styles.cardSubtitle}>{item.nameAr}</Text>
       </View>
       {isLeaf && (
         <View style={[styles.countBadge, calcCount > 0 ? styles.countBadgeActive : styles.countBadgeEmpty]}>
           <Text style={[styles.countText, calcCount > 0 ? styles.countTextActive : styles.countTextEmpty]}>
-            {calcCount > 0 ? `${calcCount}` : '–'}
+            {calcCount > 0 ? `${calcCount} Calcs` : 'None'}
           </Text>
         </View>
       )}
-      {!isLeaf && hasChildren && (
-        <View style={styles.childCountBadge}>
-          <Text style={styles.childCountText}>{item.children!.length}</Text>
-        </View>
-      )}
-      <Feather
-        name={isArabic ? 'chevron-left' : 'chevron-right'}
-        size={20}
-        color="#CBD5E1"
-      />
+      <Feather name="chevron-right" size={20} color="#CBD5E1" />
     </Pressable>
-  );
-});
-
-// ─────────────────────────────────────────────
-// BREADCRUMB COMPONENT
-// ─────────────────────────────────────────────
-const Breadcrumbs: React.FC<{
-  path: string[];
-  isArabic: boolean;
-}> = React.memo(({ path, isArabic }) => {
-  if (path.length === 0) return null;
-  const separator = isArabic ? ' ‹ ' : ' › ';
-  const items = isArabic ? [...path].reverse() : path;
-
-  return (
-    <Text style={[styles.breadcrumb, isArabic && styles.rtlText]} numberOfLines={1}>
-      {items.join(separator)}
-    </Text>
   );
 });
 
@@ -128,235 +85,177 @@ const Breadcrumbs: React.FC<{
 // ─────────────────────────────────────────────
 export default function CategoriesScreen() {
   const router = useRouter();
-  const { t, language } = useLanguage();
-  const isArabic = language === 'ar';
-
-  const { parentId, title, id, breadcrumb } = useLocalSearchParams<{
+  const { parentId, title, id } = useLocalSearchParams<{
     parentId: string;
     title: string;
     id: string;
-    breadcrumb: string;
   }>();
 
-  // Determine if we're at root level or navigating into children
-  const isRoot = !parentId;
-
-  // Use the centralized hook for category fetching
-  const {
-    categories,
-    loading,
-    refreshing,
-    error,
-    refresh,
-  } = useCategories({ parentId: parentId || undefined });
-
-  // Estimation data for leaf calculation counts
+  const [categories, setCategories] = useState<Category[]>([]);
   const [estimations, setEstimations] = useState<SavedLeafCalculation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) setIsRefreshing(true);
+      else { setIsLoading(true); setError(null); }
+
+      // 1. Fetch Categories (already mapped to clean types by API layer)
+      let catData: Category[] = [];
+
+      // If we have a title but no parentId, try to find the matching root category first
+      if (title && !parentId) {
+        const rootCats = await estimationApi.getCategories();
+        const match = rootCats.find(c =>
+          c.nameEn.toLowerCase() === title.toLowerCase() ||
+          c.nameAr.toLowerCase() === title.toLowerCase()
+        );
+
+        if (match) {
+          catData = await estimationApi.getCategoryChildren(match.categoryId);
+        } else {
+          catData = rootCats;
+        }
+      } else if (parentId) {
+        catData = await estimationApi.getCategoryChildren(parentId);
+      } else {
+        catData = await estimationApi.getCategories();
+      }
+
+      // Filter out ROOT or null parent categories
+      const filteredCategories = catData.filter(cat => {
+        const level = (cat as any).category_level ?? cat.categoryLevel ?? (cat as any).level;
+        const parent = (cat as any).parent_id ?? cat.parentId;
+        return !(level === 'ROOT' || parent === null);
+      });
+      catData = filteredCategories;
+
+      // 2. Fetch Project Estimations (for counts)
+      const estData = id
+        ? await estimationApi.getProjectEstimation(id).catch(() => null)
+        : null;
+
+      setCategories([...catData].sort((a, b) => a.sortOrder - b.sortOrder));
+      if (estData && estData.leafCalculations) {
+        setEstimations(estData.leafCalculations);
+      }
+      setError(null);
+    } catch (err: any) {
+      logger.error('[Categories]', 'Load error:', err);
+      setError(parseError(err, 'Failed to sync with database'));
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [parentId, title, id]);
 
   useEffect(() => {
-    if (!id) return;
-    estimationApi
-      .getProjectEstimation(id)
-      .then((data) => {
-        if (data?.leafCalculations) {
-          setEstimations(data.leafCalculations);
-        }
-      })
-      .catch(() => {});
-  }, [id]);
+    fetchData();
+  }, [fetchData]);
 
-  // Build breadcrumb path from param
-  const breadcrumbPath = useMemo(() => {
-    const base = isArabic ? t('categories.title') : 'Categories';
-    if (!breadcrumb) return [base];
-    try {
-      const parsed = JSON.parse(breadcrumb);
-      return Array.isArray(parsed) ? [base, ...parsed] : [base];
-    } catch {
-      return breadcrumb ? [base, breadcrumb] : [base];
-    }
-  }, [breadcrumb, isArabic, t]);
 
-  // Get calculation count for a leaf category
+  // Utility to get calculation count for a leaf category
   const getCalcCount = useCallback((catId: string) => {
     return estimations.filter(est => est.categoryId === catId).length;
   }, [estimations]);
 
-  // Handle category press — navigate deeper or open leaf
   const handleCategoryPress = useCallback(
     (item: Category) => {
       const level = (item.categoryLevel || '').toUpperCase();
       if (level === 'LEAF') {
+        // Route to the full API-powered calculation engine
         router.push({
           pathname: `/projects/${id}/category/${item.categoryId}`,
-          params: {
-            id,
-            categoryId: item.categoryId,
-            title: isArabic ? item.nameAr : item.nameEn,
-          },
+          params: { id, categoryId: item.categoryId, title: item.nameEn }
         });
       } else {
-        // Navigate deeper into children
-        const newBreadcrumb = [...breadcrumbPath.slice(1), isArabic ? item.nameAr : item.nameEn];
+        // Drill deeper into sub-categories
         router.push({
           pathname: `/projects/${id}/categories`,
           params: {
             id,
             parentId: item.categoryId,
-            title: isArabic ? item.nameAr : item.nameEn,
-            breadcrumb: JSON.stringify(newBreadcrumb),
+            title: item.nameEn,
           },
         });
       }
     },
-    [router, id, isArabic, breadcrumbPath]
+    [router, id]
   );
-
-  // Render item for FlatList
-  const renderItem = useCallback(
-    ({ item }: { item: Category }) => (
-      <CategoryCard
-        item={item}
-        onPress={handleCategoryPress}
-        calcCount={getCalcCount(item.categoryId)}
-        isArabic={isArabic}
-      />
-    ),
-    [handleCategoryPress, getCalcCount, isArabic]
-  );
-
-  const keyExtractor = useCallback((item: Category) => item.categoryId, []);
-
-  // Determine screen title
-  const screenTitle = title || (isArabic ? t('categories.title') : 'Categories');
-  const screenSubtitle = isRoot
-    ? (isArabic ? t('categories.root_subtitle') : 'Select a construction domain to explore.')
-    : (isArabic ? t('categories.child_subtitle') : `Browse items in ${title || 'this category'}.`);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <FlatList
-        data={categories}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
-        removeClippedSubviews
-        initialNumToRender={15}
-        maxToRenderPerBatch={10}
-        windowSize={5}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
+            refreshing={isRefreshing}
+            onRefresh={() => fetchData(true)}
             tintColor={theme.colors.primary}
-            colors={[theme.colors.primary]}
           />
         }
-        ListHeaderComponent={
-          <View style={styles.titleSection}>
-            <Breadcrumbs path={breadcrumbPath} isArabic={isArabic} />
-            <Text style={[styles.screenTitle, isArabic && styles.rtlText]}>
-              {screenTitle}
-            </Text>
-            <Text style={[styles.subtitle, isArabic && styles.rtlText]}>
-              {screenSubtitle}
-            </Text>
-            {!isRoot && (
-              <View style={styles.categoryCount}>
-                <Feather name="layers" size={14} color={theme.colors.textSecondary} />
-                <Text style={styles.categoryCountText}>
-                  {categories.length} {categories.length === 1 ? 'item' : 'items'}
-                </Text>
-              </View>
-            )}
+      >
+        <View style={styles.titleSection}>
+          <Text style={styles.breadcrumbTitle}>
+            {title ? `Categories / ${title}` : 'Select Category'}
+          </Text>
+          <Text style={styles.subtitle}>
+            Explore construction items and structural elements.
+          </Text>
+        </View>
+
+        {isLoading ? (
+          <View style={styles.loader}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.loaderText}>Syncing Database...</Text>
           </View>
-        }
-        ListEmptyComponent={
-          loading ? (
-            <View style={styles.loader}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-              <Text style={styles.loaderText}>
-                {isArabic ? t('common.loading') : 'Loading categories...'}
-              </Text>
-            </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Feather name="alert-circle" size={40} color="#FCA5A5" />
-              <Text style={styles.errorMsg}>{error}</Text>
-              <Pressable style={styles.retryBtn} onPress={refresh}>
-                <Text style={styles.retryBtnText}>
-                  {isArabic ? t('common.retry') : 'Retry'}
-                </Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Feather name="inbox" size={48} color="#CBD5E1" />
-              <Text style={styles.emptyText}>
-                {isArabic ? t('categories.empty') : 'No categories available'}
-              </Text>
-              <Text style={styles.emptySubtext}>
-                {isArabic ? t('categories.empty_hint') : 'Categories are managed by the administrator.'}
-              </Text>
-            </View>
-          )
-        }
-      />
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Feather name="alert-circle" size={40} color="#FCA5A5" />
+            <Text style={styles.errorMsg}>{error}</Text>
+            <Pressable style={styles.retryBtn} onPress={() => fetchData()}>
+              <Text style={styles.retryBtnText}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : categories.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Feather name="box" size={40} color="#CBD5E1" />
+            <Text style={styles.emptyText}>No categories available</Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {categories.map((cat) => (
+              <CategoryCard
+                key={cat.categoryId}
+                item={cat}
+                onPress={handleCategoryPress}
+                calcCount={getCalcCount(cat.categoryId)}
+              />
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  } as ViewStyle,
-  scrollContent: {
-    padding: theme.spacing.lg,
-    paddingBottom: 40,
-    gap: 10,
-  } as ViewStyle,
-
-  // ── Header ─────────────────────────────────
-  titleSection: {
-    marginBottom: theme.spacing.md,
-  } as ViewStyle,
-  breadcrumb: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-    marginBottom: 4,
-    letterSpacing: 0.3,
-  } as TextStyle,
-  screenTitle: {
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  scrollContent: { padding: theme.spacing.lg },
+  titleSection: { marginBottom: theme.spacing.xl },
+  breadcrumbTitle: { 
     ...theme.typography.h2,
-    color: theme.colors.text,
-    letterSpacing: -0.5,
-  } as TextStyle,
-  subtitle: {
+    color: theme.colors.text, 
+    letterSpacing: -0.5 
+  },
+  subtitle: { 
     ...theme.typography.small,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
-    lineHeight: 20,
-  } as TextStyle,
-  categoryCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.roundness.md,
-    alignSelf: 'flex-start',
-  } as ViewStyle,
-  categoryCountText: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
-  } as TextStyle,
-
-  // ── Card ───────────────────────────────────
+    color: theme.colors.textSecondary, 
+    marginTop: 4 
+  },
+  list: { gap: 12 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -366,12 +265,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     ...theme.shadows.xs,
-  } as ViewStyle,
-  cardPressed: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.primary,
-    transform: [{ scale: 0.98 }],
-  } as ViewStyle,
+  },
+  cardPressed: { 
+    backgroundColor: theme.colors.surface, 
+    borderColor: theme.colors.primary 
+  },
   iconContainer: {
     width: 48,
     height: 48,
@@ -380,121 +278,57 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: theme.spacing.lg,
-  } as ViewStyle,
-  cardContent: {
-    flex: 1,
-  } as ViewStyle,
-  rtlContent: {
-    alignItems: 'flex-end',
-  } as ViewStyle,
-  cardTitle: {
+  },
+  cardContent: { flex: 1 },
+  cardTitle: { 
     ...theme.typography.bodyBold,
-    color: theme.colors.text,
-  } as TextStyle,
-  cardSubtitle: {
+    color: theme.colors.text 
+  },
+  cardSubtitle: { 
     ...theme.typography.caption,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  } as TextStyle,
-  cardDescription: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
-    fontSize: 11,
-  } as TextStyle,
-
-  // ── Badges ─────────────────────────────────
+    color: theme.colors.textMuted, 
+    marginTop: 2 
+  },
   countBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: theme.spacing.sm,
-  } as ViewStyle,
-  countBadgeActive: {
-    backgroundColor: theme.colors.infoLight,
-  } as ViewStyle,
-  countBadgeEmpty: {
-    backgroundColor: theme.colors.surfaceSecondary,
-  } as ViewStyle,
-  countText: {
-    ...theme.typography.caption,
-    fontSize: 12,
-    fontWeight: '800',
-  } as TextStyle,
-  countTextActive: {
-    color: theme.colors.info,
-  } as TextStyle,
-  countTextEmpty: {
-    color: theme.colors.textMuted,
-  } as TextStyle,
-  childCountBadge: {
-    backgroundColor: theme.colors.primaryLight,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: theme.roundness.sm,
-    marginRight: theme.spacing.sm,
-  } as ViewStyle,
-  childCountText: {
+    marginRight: theme.spacing.md,
+  },
+  countBadgeActive: { backgroundColor: theme.colors.infoLight },
+  countBadgeEmpty: { backgroundColor: theme.colors.surfaceSecondary },
+  countText: { 
     ...theme.typography.caption,
-    fontSize: 10,
-    fontWeight: '800',
-    color: theme.colors.primary,
-  } as TextStyle,
-
-  // ── States ─────────────────────────────────
-  loader: {
-    marginTop: 80,
-    alignItems: 'center',
-    gap: 12,
-  } as ViewStyle,
-  loaderText: {
+    fontSize: 10, 
+    fontWeight: '800' 
+  },
+  countTextActive: { color: theme.colors.info },
+  countTextEmpty: { color: theme.colors.textMuted },
+  loader: { marginTop: 60, alignItems: 'center', gap: 12 },
+  loaderText: { 
     ...theme.typography.bodyMedium,
-    color: theme.colors.textSecondary,
-  } as TextStyle,
-  errorContainer: {
-    marginTop: 80,
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-  } as ViewStyle,
-  errorMsg: {
+    color: theme.colors.textSecondary 
+  },
+  errorContainer: { marginTop: 60, alignItems: 'center', gap: 12 },
+  errorMsg: { 
     ...theme.typography.body,
-    color: theme.colors.error,
-    textAlign: 'center',
-  } as TextStyle,
-  retryBtn: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: theme.roundness.lg,
-    marginTop: 8,
-  } as ViewStyle,
-  retryBtnText: {
-    color: theme.colors.white,
-    fontWeight: '700',
-  } as TextStyle,
-  emptyContainer: {
-    marginTop: 80,
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-  } as ViewStyle,
-  emptyText: {
+    color: theme.colors.error, 
+    textAlign: 'center', 
+    paddingHorizontal: 20 
+  },
+  retryBtn: { 
+    backgroundColor: theme.colors.primary, 
+    paddingHorizontal: 24, 
+    paddingVertical: 12, 
+    borderRadius: theme.roundness.lg 
+  },
+  retryBtnText: { 
+    color: theme.colors.white, 
+    fontWeight: '700' 
+  },
+  emptyContainer: { marginTop: 60, alignItems: 'center', gap: 12 },
+  emptyText: { 
     ...theme.typography.bodyMedium,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-  } as TextStyle,
-  emptySubtext: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  } as TextStyle,
-
-  // ── RTL ────────────────────────────────────
-  rtlText: {
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  } as TextStyle,
+    color: theme.colors.textMuted 
+  },
 });
