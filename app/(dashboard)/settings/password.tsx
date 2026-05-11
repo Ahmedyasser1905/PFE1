@@ -2,49 +2,34 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Lock, ShieldCheck } from 'lucide-react-native';
+import { ArrowLeft, Lock, ShieldCheck, Mail } from 'lucide-react-native';
 import { theme } from '~/constants/theme';
-import { BaseInput } from '~/components/ui/BaseInput';
 import { BaseButton } from '~/components/ui/BaseButton';
-import { usersApi } from '~/api/api';
+import { useAuth } from '~/context/AuthContext';
+import { authApi } from '~/api/authApi';
 
 export default function ChangePassword() {
     const router = useRouter();
-    const [currentPass, setCurrentPass] = useState('');
-    const [newPass, setNewPass] = useState('');
-    const [confirmPass, setConfirmPass] = useState('');
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [emailSent, setEmailSent] = useState(false);
 
-    const handleChangePassword = async () => {
-        // Client-side validation
-        if (!currentPass) {
-            Alert.alert('Error', 'Current password is required');
-            return;
-        }
-        if (newPass.length < 6) {
-            Alert.alert('Error', 'New password must be at least 6 characters');
-            return;
-        }
-        if (newPass !== confirmPass) {
-            Alert.alert('Error', 'New passwords do not match');
-            return;
-        }
-        if (currentPass === newPass) {
-            Alert.alert('Error', 'New password must differ from current password');
+    const handleSendResetEmail = async () => {
+        if (!user?.email) {
+            Alert.alert('Error', 'No email found for your account. Please log in again.');
             return;
         }
 
         setLoading(true);
         try {
-            await usersApi.changePassword({
-                currentPassword: currentPass,
-                newPassword: newPass,
-            });
-            Alert.alert('Success', 'Password updated successfully', [
-                { text: 'OK', onPress: () => router.back() },
-            ]);
+            await authApi.forgotPassword(user.email);
+            setEmailSent(true);
+            Alert.alert(
+                'Email Sent',
+                'A password reset link has been sent to your email. Please check your inbox and follow the instructions.',
+            );
         } catch (error: any) {
-            const msg = error.response?.data?.message || error.message || 'Failed to change password';
+            const msg = error?.message || error?.data?.error?.message || 'Failed to send reset email';
             Alert.alert('Error', msg);
         } finally {
             setLoading(false);
@@ -72,36 +57,41 @@ export default function ChangePassword() {
                         <ShieldCheck size={32} color={theme.colors.primary} />
                     </View>
                     <Text style={styles.infoTitle}>Change Password</Text>
-                    <Text style={styles.infoSubtitle}>Ensure your account stays secure with a strong password.</Text>
+                    <Text style={styles.infoSubtitle}>
+                        For your security, password changes are verified via email.
+                        We'll send a reset link to your registered email address.
+                    </Text>
                 </View>
-                <BaseInput
-                    label="Current Password"
-                    secureTextEntry
-                    icon={Lock}
-                    value={currentPass}
-                    onChangeText={setCurrentPass}
-                />
-                <View style={styles.divider} />
-                <BaseInput
-                    label="New Password"
-                    secureTextEntry
-                    icon={Lock}
-                    value={newPass}
-                    onChangeText={setNewPass}
-                />
-                <BaseInput
-                    label="Confirm New Password"
-                    secureTextEntry
-                    icon={Lock}
-                    value={confirmPass}
-                    onChangeText={setConfirmPass}
-                />
-                <BaseButton
-                    title={loading ? "Updating..." : "Update Password"}
-                    onPress={handleChangePassword}
-                    style={[styles.btn, loading && { opacity: 0.7 }] as any}
-                    disabled={loading}
-                />
+
+                {user?.email && (
+                    <View style={styles.emailBox}>
+                        <Mail size={18} color={theme.colors.textSecondary} />
+                        <Text style={styles.emailText}>{user.email}</Text>
+                    </View>
+                )}
+
+                {emailSent ? (
+                    <View style={styles.successBox}>
+                        <Text style={styles.successTitle}>✓ Email Sent</Text>
+                        <Text style={styles.successText}>
+                            Check your inbox for the password reset link.
+                            The link expires in 15 minutes.
+                        </Text>
+                        <BaseButton
+                            title="Send Again"
+                            onPress={handleSendResetEmail}
+                            style={[styles.btn, { opacity: loading ? 0.7 : 1 }] as any}
+                            disabled={loading}
+                        />
+                    </View>
+                ) : (
+                    <BaseButton
+                        title={loading ? "Sending..." : "Send Reset Link"}
+                        onPress={handleSendResetEmail}
+                        style={[styles.btn, loading && { opacity: 0.7 }] as any}
+                        disabled={loading}
+                    />
+                )}
             </ScrollView>
         </SafeAreaView>
     );
@@ -156,9 +146,43 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     infoTitle: { fontSize: 22, fontWeight: '800', color: theme.colors.text },
-    infoSubtitle: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 8 },
-    divider: { height: 1, backgroundColor: theme.colors.border, marginVertical: 12 },
-    btn: { marginTop: 24 }
+    infoSubtitle: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 22 },
+    emailBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: '#f8fafc',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        marginBottom: 24,
+    },
+    emailText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: theme.colors.text,
+    },
+    successBox: {
+        backgroundColor: '#f0fdf4',
+        padding: 20,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#bbf7d0',
+        alignItems: 'center',
+        gap: 8,
+    },
+    successTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#16a34a',
+    },
+    successText: {
+        fontSize: 14,
+        color: '#15803d',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 8,
+    },
+    btn: { marginTop: 24 },
 });
-
-

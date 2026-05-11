@@ -361,7 +361,6 @@ export function mapSubscriptionFromAPI(raw: RawSubscription | any): Subscription
     };
   }
 
-  console.log("SUB RESPONSE:", raw);
 
   // Server shape after envelope unwrap:
   // { status, subscription_id, plan: { name, price, duration },
@@ -385,8 +384,6 @@ export function mapSubscriptionFromAPI(raw: RawSubscription | any): Subscription
     planType = raw.plan_type;
   }
 
-  console.log("SUB PLAN NAME:", planName);
-  console.log("IS ACTIVE:", isActive);
 
   return {
     planName,

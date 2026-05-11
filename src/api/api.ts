@@ -531,6 +531,8 @@ export const subscriptionApi = {
     },
     switchPlan: (planId: string): Promise<any> =>
         api.patch('/subscriptions/switch', { newPlanId: planId }),
+    confirmSwitchPlan: (confirmationToken: string): Promise<any> =>
+        api.post('/subscriptions/switch/confirm', { confirmationToken }),
 };
 
 // ─── Plans APIs ───────────────────────────────────────────────────────────────

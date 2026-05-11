@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, TextInput, Text, StyleSheet, Pressable, TextInputProps } from 'react-native';
+import { View, TextInput, Text, StyleSheet, Pressable, TextInputProps, ViewStyle, TextStyle } from 'react-native';
 import { Eye, EyeOff, LucideIcon } from 'lucide-react-native';
 import { theme } from '~/constants/theme';
 interface BaseInputProps extends TextInputProps {

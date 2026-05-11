@@ -675,8 +675,6 @@ export default function LeafCalculationScreen() {
           waste_factor_snapshot: Number(ml.wasteFactorSnapshot ?? ml.waste_factor_snapshot ?? 0),
           sub_total: Number(ml.subTotal ?? ml.sub_total ?? 0),
         })),
-        timestamp: new Date().toISOString(),
-        calculation_status: 'DONE',
       };
 
       if (__DEV__) {

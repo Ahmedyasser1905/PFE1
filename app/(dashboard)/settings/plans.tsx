@@ -113,31 +113,41 @@ export default function PlansScreen() {
             setSubscribingPlanId(plan.planId);
 
             if (isSubscriptionActive && subscription?.planId) {
-                // Already subscribed — switch plan
-                await subscriptionApi.switchPlan(plan.planId);
+                // Already subscribed — initiate 2-step switch (sends confirmation email)
+                const result = await subscriptionApi.switchPlan(plan.planId);
                 showFeedback({
-                    title: 'Plan Switched!',
-                    message: `You've switched to the ${plan.nameEn} plan.`,
-                    type: 'success',
+                    title: 'Confirmation Email Sent',
+                    message: `A confirmation email has been sent. Please check your inbox to confirm switching to the ${plan.nameEn} plan.`,
+                    type: 'info',
                 });
+                // Don't navigate back — user needs to check email first
             } else {
-                // No subscription — create new
+                // No subscription — create new (instant)
                 await subscriptionApi.create(plan.planId);
                 showFeedback({
                     title: 'Plan Activated!',
                     message: `Welcome to the ${plan.nameEn} plan.`,
                     type: 'success',
                 });
+                await refreshSubscription();
+                router.back();
             }
-
-            await refreshSubscription();
-            router.back();
         } catch (err: any) {
-            showFeedback({
-                title: 'Error',
-                message: err?.message || 'Failed to change plan. Please try again.',
-                type: 'error',
-            });
+            const errMsg = err?.message || err?.data?.error?.message || 'Failed to change plan. Please try again.';
+            // Handle specific error codes from backend
+            if (err?.status === 409 || err?.response?.status === 409) {
+                showFeedback({
+                    title: 'Already Subscribed',
+                    message: 'You are already subscribed to this plan.',
+                    type: 'warning',
+                });
+            } else {
+                showFeedback({
+                    title: 'Error',
+                    message: errMsg,
+                    type: 'error',
+                });
+            }
         } finally {
             setSubscribingPlanId(null);
         }

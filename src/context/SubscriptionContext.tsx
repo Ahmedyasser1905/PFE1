@@ -61,36 +61,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [subscription, usage]);
 
   const canCalculate = useMemo(() => {
-    if (!subscription) {
-      console.log("[SubscriptionContext] No subscription -> ALLOW (fallback)");
-      return true;
-    }
-    if (!subscription.isActive) {
-      console.log("[SubscriptionContext] Subscription INACTIVE -> BLOCK");
-      return false;
-    }
-    if (!usage) {
-      console.log("[SubscriptionContext] No usage data -> ALLOW (fallback)");
-      return true;
-    }
+    if (!subscription) return true;
+    if (!subscription.isActive) return false;
+    if (!usage) return true;
 
     const { used, limit } = usage.leafCalculationsLimit;
-    console.log("[SubscriptionContext] SUB:", subscription);
-    console.log("[SubscriptionContext] USED:", used);
-    console.log("[SubscriptionContext] MAX:", limit);
-
-    if (limit === -1) {
-      console.log("[SubscriptionContext] Limit is -1 -> UNLIMITED (ALLOW)");
-      return true;
-    }
-    if (limit === 0) {
-      console.log("[SubscriptionContext] Limit is 0 -> UNRESOLVED, defaulting to ALLOW");
-      return true;
-    }
-
-    const isBlocked = used >= limit;
-    console.log("[SubscriptionContext] BLOCKED:", isBlocked);
-    return !isBlocked;
+    if (limit === -1) return true;   // unlimited
+    if (limit === 0) return true;    // unresolved from backend — allow by default
+    return used < limit;
   }, [subscription, usage]);
 
   // ─── AI usage gate ──────────────────────────────────────────────────────────
