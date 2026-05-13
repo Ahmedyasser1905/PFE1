@@ -38,22 +38,35 @@ export class PostgresEngineRepository {
   }
 
   async getFieldDefinitions(formula_id) {
+    // LEFT JOIN field_types so field_type_name is available to the engine
+    // for type-aware coercion (NUMBER / BOOLEAN / SELECT).
     return sql`
       SELECT
-        field_id,
-        formula_id,
-        field_type_id,
-        unit_id,
-        source_formula_id,
-        label_en       AS label,
-        label_ar,
-        variable_name,
-        required,
-        default_value,
-        sort_order
-      FROM field_definitions
-      WHERE formula_id = ${formula_id}
-      ORDER BY sort_order
+        fd.field_id,
+        fd.formula_id,
+        fd.field_type_id,
+        LOWER(COALESCE(ft.name_en, 'number')) AS field_type_name,
+        fd.unit_id,
+        fd.source_formula_id,
+        fd.label_en       AS label,
+        fd.label_ar,
+        fd.variable_name,
+        fd.required,
+        fd.default_value,
+        fd.sort_order
+      FROM field_definitions fd
+      LEFT JOIN field_types ft ON ft.field_type_id = fd.field_type_id
+      WHERE fd.formula_id = ${formula_id}
+      ORDER BY fd.sort_order
+    `;
+  }
+
+  // Used by the admin UI to populate the field-type selector.
+  async getFieldTypes() {
+    return sql`
+      SELECT field_type_id, name_en, name_ar
+      FROM field_types
+      ORDER BY name_en
     `;
   }
 
@@ -73,6 +86,30 @@ export class PostgresEngineRepository {
       FROM resource_catalog
       WHERE category_id = ${category_id}
       ORDER BY material_type DESC, material_name_en
+    `;
+  }
+
+  async getServicesForCategory(category_id) {
+    return sql`
+      SELECT
+        sc.service_id,
+        sc.category_id,
+        sc.formula_id,
+        sc.unit_id,
+        sc.service_name_en,
+        sc.service_name_ar,
+        COALESCE(sc.service_name_en, sc.service_name_ar) AS service_name,
+        sc.equipment_cost,
+        sc.manpower_cost,
+        sc.install_labor_price,
+        (sc.equipment_cost + sc.manpower_cost + sc.install_labor_price) AS unit_price,
+        sc.unit_en,
+        sc.unit_ar,
+        u.symbol AS unit_symbol
+      FROM service_config sc
+      LEFT JOIN units u ON u.unit_id = sc.unit_id
+      WHERE sc.category_id = ${category_id}
+      ORDER BY sc.service_name_en
     `;
   }
 

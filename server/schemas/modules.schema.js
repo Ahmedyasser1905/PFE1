@@ -36,31 +36,32 @@ export const CreateFormulaSchema = z.object({
   name_en:        z.string().min(1, 'Formula name (EN) is required'),
   name_ar:        z.string().default(''),
   expression:     z.string().min(1, 'Expression is required'),
-  output_unit_id: z.string(),
-  formula_type:   z.enum(['NON_MATERIAL', 'MATERIAL']).optional(),
+  output_unit_id: z.string().nullable().optional(),
+  formula_type:   z.enum(['NON_MATERIAL', 'MATERIAL', 'SERVICE']).optional(),
 });
 
 export const UpdateFormulaSchema = z.object({
   name_en:        z.string().min(1).optional(),
   name_ar:        z.string().optional(),
   expression:     z.string().min(1).optional(),
-  output_unit_id: z.string().optional(),
-  formula_type:   z.enum(['NON_MATERIAL', 'MATERIAL']).optional(),
+  output_unit_id: z.string().nullable().optional(),
+  formula_type:   z.enum(['NON_MATERIAL', 'MATERIAL', 'SERVICE']).optional(),
 });
 
 // ── Formula Output ────────────────────────────────────────────────────────────
 
 export const CreateFormulaOutputSchema = z.object({
   output_key:      z.string().min(1).regex(varNameRegex, 'Must be lowercase letters/digits/underscores, starting with a letter'),
-  output_label_en:    z.string().min(1, 'Output label is required'),
-  output_label_ar:    z.string().nullable().optional(),
-  output_unit_id:  z.string(),
+  output_label_en: z.string().min(1, 'Output label is required'),
+  output_label_ar: z.string().nullable().optional(),
+  output_unit_id:  z.string().nullable().optional(),
 });
 
 export const UpdateFormulaOutputSchema = z.object({
   output_key:      z.string().regex(varNameRegex).optional(),
-  output_label:    z.string().min(1).optional(),
-  output_unit_id:  z.string(),
+  output_label_en: z.string().min(1).optional(),
+  output_label_ar: z.string().nullable().optional(),
+  output_unit_id:  z.string().nullable().optional(),
 });
 
 // ── Field definition ──────────────────────────────────────────────────────────
@@ -73,6 +74,7 @@ export const CreateFieldSchema = z.object({
   required:          z.boolean().default(true),
   default_value:     z.string().nullable().optional(),
   source_formula_id: z.string().nullable().optional(),
+  field_type_id:     z.string().nullable().optional(),
   sort_order:        z.number().int().default(0),
 });
 
@@ -84,6 +86,7 @@ export const UpdateFieldSchema = z.object({
   required:          z.boolean().optional(),
   default_value:     z.string().nullable().optional(),
   source_formula_id: z.string().nullable().optional(),
+  field_type_id:     z.string().nullable().optional(),
   sort_order:        z.number().int().optional(),
 });
 

@@ -602,11 +602,12 @@ const styles = StyleSheet.create({
 
   mainCategoriesRow: { 
     flexDirection: 'row', 
+    flexWrap: 'wrap',
     gap: theme.spacing.md, 
     marginBottom: theme.spacing.md,
   } as ViewStyle,
   mainCatCard: {
-    flex: 1,
+    width: '47%',
     backgroundColor: theme.colors.white,
     padding: theme.spacing.md,
     borderRadius: theme.roundness.xl,

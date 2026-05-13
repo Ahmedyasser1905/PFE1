@@ -649,9 +649,9 @@ export default function LeafCalculationScreen() {
         Object.assign(resultObj, results.results);
       }
 
-      const totalFromMaterials = (results.materialLines || []).reduce((sum: number, m: any) => sum + (m.subTotal || 0), 0);
-      const leafTotal = results.totalCost > 0 ? results.totalCost : totalFromMaterials;
-      resultObj['_computed_leaf_total'] = leafTotal;
+      const totalFromMaterials = (results.materialLines || []).reduce((sum: number, m: any) => sum + (Number(m.subTotal) || 0), 0);
+      const leafTotal = Number(results.totalCost) > 0 ? Number(results.totalCost) : totalFromMaterials;
+      resultObj['_computed_leaf_total'] = Number(leafTotal) || 0;
 
       const formulaVersion = Number(selectedFormula.version ?? 1) || 1;
       const savePayload: any = {
@@ -669,12 +669,14 @@ export default function LeafCalculationScreen() {
           material_name: String(ml.materialName || ml.material_name || 'Unknown Material'),
           material_type: String(ml.materialType || ml.material_type || 'PRIMARY'),
           quantity: Number(ml.quantity) || 0,
-          applied_waste: Number(ml.appliedWaste ?? ml.applied_waste ?? 0),
-          quantity_with_waste: Number(ml.quantityWithWaste ?? ml.quantity_with_waste ?? 0),
-          unit_price_snapshot: Number(ml.unitPriceSnapshot ?? ml.unit_price_snapshot ?? 0),
-          waste_factor_snapshot: Number(ml.wasteFactorSnapshot ?? ml.waste_factor_snapshot ?? 0),
-          sub_total: Number(ml.subTotal ?? ml.sub_total ?? 0),
+          applied_waste: Number(ml.appliedWaste ?? ml.applied_waste ?? 0) || 0,
+          quantity_with_waste: Number(ml.quantityWithWaste ?? ml.quantity_with_waste ?? 0) || 0,
+          unit_price_snapshot: Number(ml.unitPriceSnapshot ?? ml.unit_price_snapshot ?? 0) || 0,
+          waste_factor_snapshot: Number(ml.wasteFactorSnapshot ?? ml.waste_factor_snapshot ?? 0) || 0,
+          sub_total: Number(ml.subTotal ?? ml.sub_total ?? 0) || 0,
         })),
+        // Plan §6.4: service_lines must always be present even when empty
+        service_lines: [],
       };
 
       if (__DEV__) {

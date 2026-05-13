@@ -4,9 +4,8 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   Pressable,
-  TextInput,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
@@ -47,7 +46,7 @@ const resolveIcon = (icon: string | null): React.ReactNode => {
 };
 
 // ─────────────────────────────────────────────
-// COMPACT CATEGORY CARD (RESTORED STYLE)
+// CATEGORY CARD — 2-per-row grid tile
 // ─────────────────────────────────────────────
 const CategoryCard: React.FC<{
   item: Category;
@@ -64,10 +63,8 @@ const CategoryCard: React.FC<{
       <View style={styles.iconContainer}>
         {resolveIcon(item.icon)}
       </View>
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.nameEn}</Text>
-        <Text style={styles.cardSubtitle}>{item.nameAr}</Text>
-      </View>
+      <Text style={styles.cardTitle} numberOfLines={2}>{item.nameEn}</Text>
+      <Text style={styles.cardSubtitle} numberOfLines={1}>{item.nameAr}</Text>
       {isLeaf && (
         <View style={[styles.countBadge, calcCount > 0 ? styles.countBadgeActive : styles.countBadgeEmpty]}>
           <Text style={[styles.countText, calcCount > 0 ? styles.countTextActive : styles.countTextEmpty]}>
@@ -75,7 +72,6 @@ const CategoryCard: React.FC<{
           </Text>
         </View>
       )}
-      <Feather name="chevron-right" size={20} color="#CBD5E1" />
     </Pressable>
   );
 });
@@ -187,7 +183,18 @@ export default function CategoriesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView
+      <FlatList
+        data={categories}
+        numColumns={2}
+        keyExtractor={(item) => item.categoryId}
+        renderItem={({ item }) => (
+          <CategoryCard
+            item={item}
+            onPress={handleCategoryPress}
+            calcCount={getCalcCount(item.categoryId)}
+          />
+        )}
+        columnWrapperStyle={styles.row}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
@@ -196,47 +203,38 @@ export default function CategoriesScreen() {
             tintColor={theme.colors.primary}
           />
         }
-      >
-        <View style={styles.titleSection}>
-          <Text style={styles.breadcrumbTitle}>
-            {title ? `Categories / ${title}` : 'Select Category'}
-          </Text>
-          <Text style={styles.subtitle}>
-            Explore construction items and structural elements.
-          </Text>
-        </View>
-
-        {isLoading ? (
-          <View style={styles.loader}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loaderText}>Syncing Database...</Text>
+        ListHeaderComponent={
+          <View style={styles.titleSection}>
+            <Text style={styles.breadcrumbTitle}>
+              {title ? `Categories / ${title}` : 'Select Category'}
+            </Text>
+            <Text style={styles.subtitle}>
+              Explore construction items and structural elements.
+            </Text>
           </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Feather name="alert-circle" size={40} color="#FCA5A5" />
-            <Text style={styles.errorMsg}>{error}</Text>
-            <Pressable style={styles.retryBtn} onPress={() => fetchData()}>
-              <Text style={styles.retryBtnText}>Retry</Text>
-            </Pressable>
-          </View>
-        ) : categories.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Feather name="box" size={40} color="#CBD5E1" />
-            <Text style={styles.emptyText}>No categories available</Text>
-          </View>
-        ) : (
-          <View style={styles.list}>
-            {categories.map((cat) => (
-              <CategoryCard
-                key={cat.categoryId}
-                item={cat}
-                onPress={handleCategoryPress}
-                calcCount={getCalcCount(cat.categoryId)}
-              />
-            ))}
-          </View>
-        )}
-      </ScrollView>
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={styles.loaderText}>Syncing Database...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Feather name="alert-circle" size={40} color="#FCA5A5" />
+              <Text style={styles.errorMsg}>{error}</Text>
+              <Pressable style={styles.retryBtn} onPress={() => fetchData()}>
+                <Text style={styles.retryBtnText}>Retry</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Feather name="box" size={40} color="#CBD5E1" />
+              <Text style={styles.emptyText}>No categories available</Text>
+            </View>
+          )
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -255,15 +253,20 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary, 
     marginTop: 4 
   },
-  list: { gap: 12 },
-  card: {
+  row: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  card: {
+    flex: 1,
     alignItems: 'center',
     backgroundColor: theme.colors.white,
     padding: theme.spacing.lg,
     borderRadius: theme.roundness.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    marginHorizontal: 6,
     ...theme.shadows.xs,
   },
   cardPressed: { 
@@ -271,29 +274,31 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary 
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.roundness.md,
+    width: 52,
+    height: 52,
+    borderRadius: theme.roundness.lg,
     backgroundColor: theme.colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
   },
-  cardContent: { flex: 1 },
   cardTitle: { 
     ...theme.typography.bodyBold,
-    color: theme.colors.text 
+    color: theme.colors.text,
+    textAlign: 'center',
+    fontSize: 13,
   },
   cardSubtitle: { 
     ...theme.typography.caption,
     color: theme.colors.textMuted, 
+    textAlign: 'center',
     marginTop: 2 
   },
   countBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: theme.roundness.sm,
-    marginRight: theme.spacing.md,
+    marginTop: theme.spacing.sm,
   },
   countBadgeActive: { backgroundColor: theme.colors.infoLight },
   countBadgeEmpty: { backgroundColor: theme.colors.surfaceSecondary },

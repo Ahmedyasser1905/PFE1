@@ -511,6 +511,18 @@ createProject: async (data: CreateProjectRequest | FormData): Promise<Project> =
     },
 };
 
+// ─── Settings API ─────────────────────────────────────────────────────────────
+
+export const settingsApi = {
+    /**
+     * Update user profile settings (Plan §13).
+     * PATCH /api/settings — sends { name, language }
+     */
+    updateProfile: async (data: { name?: string; language?: 'en' | 'ar' }): Promise<any> => {
+        return api.patch('/settings', data);
+    },
+};
+
 // ─── Subscription APIs ────────────────────────────────────────────────────────
 
 export const subscriptionApi = {

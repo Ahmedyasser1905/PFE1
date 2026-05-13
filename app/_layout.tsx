@@ -136,6 +136,24 @@ function RootLayoutNav() {
 
     const showContent = !authLoading && isAppReady && splashAnimationFinished;
 
+    // CRITICAL GUARD (Plan §12.2): Do NOT mount the navigator (<Slot />) until
+    // AuthContext has finished hydrating. Rendering it early causes
+    // NativeStackNavigator to read state before it's ready, producing:
+    //   TypeError: Cannot read property 'stale' of undefined
+    if (authLoading && !splashAnimationFinished) {
+        return (
+            <View style={styles.root}>
+                <View style={styles.splashOverlay}>
+                    <SplashScreenComponent
+                        onAnimationComplete={() => {
+                            setSplashAnimationFinished(true);
+                        }}
+                    />
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View
             style={styles.root}

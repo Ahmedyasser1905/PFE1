@@ -12,8 +12,9 @@ Responsibilities:
 */
 export default async function checkSubscription(req, res, next) {
   try {
-    if (!req.user || !req.user.userId) {
-      return next(new AppError('Unauthorized', 'UNAUTHORIZED', 401));
+    // ── 0. Admin bypass
+    if (req.user?.role === 'ADMIN') {
+      return next();
     }
 
     // ── 1. Fetch raw subscription row (we need subscription_id for usage counting)

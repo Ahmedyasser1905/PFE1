@@ -1,13 +1,16 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ViewStyle, TextStyle, ImageStyle } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, User, Mail } from 'lucide-react-native';
+import { ArrowLeft, User, Mail, Save } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { theme } from '~/constants/theme';
 import { useUser } from '~/hooks/useUser';
 import { useLanguage } from '~/context/LanguageContext';
 import { resolveImageUrl } from '~/utils/imageResolver';
+import { settingsApi } from '~/api/api';
+import { useFeedback } from '~/context/FeedbackContext';
+import { useAuth } from '~/context/AuthContext';
 
 const styles = StyleSheet.create({
   container: { 
@@ -91,6 +94,17 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary 
   } as TextStyle,
 
+  inputEditable: {
+    borderWidth: 1.5, 
+    borderColor: theme.colors.border,
+    borderRadius: theme.roundness.md, 
+    paddingHorizontal: theme.spacing.lg, 
+    paddingVertical: 14,
+    backgroundColor: theme.colors.white,
+    ...theme.typography.bodyMedium,
+    color: theme.colors.text,
+  } as TextStyle,
+
   inputReadOnly: {
     borderWidth: 1.5, 
     borderColor: theme.colors.surface,
@@ -119,15 +133,63 @@ const styles = StyleSheet.create({
     fontWeight: '800', 
     color: theme.colors.textMuted 
   } as TextStyle,
+
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 16,
+    borderRadius: theme.roundness.xl,
+    ...theme.shadows.md,
+  } as ViewStyle,
+  saveBtnDisabled: {
+    opacity: 0.6,
+  } as ViewStyle,
+  saveBtnText: {
+    color: theme.colors.white,
+    ...theme.typography.bodyBold,
+    fontWeight: '700',
+  } as TextStyle,
 });
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
   const { user, name, email } = useUser();
   const { t, language } = useLanguage();
+  const { updateUser } = useAuth();
+  const { showSuccess, showError } = useFeedback();
   const isArabic = language === 'ar';
 
+  const [editName, setEditName] = useState(name || '');
+  const [saving, setSaving] = useState(false);
+
   const initials = (name || 'U').charAt(0).toUpperCase();
+
+  const hasChanges = editName.trim() !== (name || '');
+
+  const handleSave = useCallback(async () => {
+    if (!hasChanges || saving) return;
+    
+    const trimmedName = editName.trim();
+    if (trimmedName.length < 3) {
+      showError('Invalid Name', 'Name must be at least 3 characters.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await settingsApi.updateProfile({ name: trimmedName, language: language as 'en' | 'ar' });
+      await updateUser({ name: trimmedName });
+      showSuccess('Profile Updated', 'Your personal info has been saved.');
+    } catch (err: any) {
+      // Error is already handled by the API interceptor
+      console.error('[PersonalInfo] Save error:', err);
+    } finally {
+      setSaving(false);
+    }
+  }, [editName, hasChanges, saving, language, updateUser, showSuccess, showError]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -159,20 +221,21 @@ export default function PersonalInfoScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, isArabic && styles.rtlText]}>{t('settings.account_details')}</Text>
 
-          {/* Name — read only */}
+          {/* Name — editable (Plan §13: PATCH /api/settings) */}
           <View style={styles.field}>
             <View style={[styles.fieldLabelRow, isArabic && styles.rtlRow]}>
               <User size={15} color="#64748B" />
               <Text style={styles.fieldLabel}>{t('settings.full_name')}</Text>
             </View>
-            <View style={[styles.inputReadOnly, isArabic && styles.rtlRow]}>
-              <Text style={[styles.inputReadOnlyText, isArabic && styles.rtlText]}>
-                {name || '—'}
-              </Text>
-              <View style={styles.readOnlyBadge}>
-                <Text style={styles.readOnlyBadgeText}>{t('settings.read_only')}</Text>
-              </View>
-            </View>
+            <TextInput
+              style={[styles.inputEditable, isArabic && styles.rtlText]}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Enter your name"
+              placeholderTextColor={theme.colors.textMuted}
+              editable={!saving}
+              autoCapitalize="words"
+            />
           </View>
 
           {/* Email — read only */}
@@ -191,6 +254,23 @@ export default function PersonalInfoScreen() {
             </View>
           </View>
         </View>
+
+        {/* Save Button */}
+        <TouchableOpacity
+          style={[styles.saveBtn, (!hasChanges || saving) && styles.saveBtnDisabled]}
+          onPress={handleSave}
+          disabled={!hasChanges || saving}
+          activeOpacity={0.8}
+        >
+          {saving ? (
+            <ActivityIndicator color={theme.colors.white} />
+          ) : (
+            <>
+              <Save size={20} color={theme.colors.white} />
+              <Text style={styles.saveBtnText}>Save Changes</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
     );

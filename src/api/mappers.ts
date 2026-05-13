@@ -114,7 +114,8 @@ export function mapCategoryFromAPI(raw: RawCategory): Category {
     nameEn: raw.name_en,
     nameAr: raw.name_ar,
     icon: raw.icon,
-    sortOrder: raw.sort_order,
+    // Force Number() coercion: postgres drivers can return numerics as strings
+    sortOrder: Number(raw.sort_order ?? 0),
   };
 }
 
@@ -153,12 +154,13 @@ export function mapMaterialLineFromAPI(raw: RawMaterialLine): MaterialLine {
     materialNameEn: raw?.material_name_en,
     materialNameAr: raw?.material_name_ar,
     materialType: raw?.material_type || 'PRIMARY',
-    quantity: raw?.quantity ?? 0,
-    appliedWaste: raw?.applied_waste ?? 0,
-    quantityWithWaste: raw?.quantity_with_waste ?? 0,
-    unitPriceSnapshot: raw?.unit_price_snapshot ?? 0,
-    wasteFactorSnapshot: raw?.waste_factor_snapshot ?? 0,
-    subTotal: raw?.sub_total ?? 0,
+    // Force Number() coercion: postgres drivers can return numerics as strings
+    quantity: Number(raw?.quantity ?? 0),
+    appliedWaste: Number(raw?.applied_waste ?? 0),
+    quantityWithWaste: Number(raw?.quantity_with_waste ?? 0),
+    unitPriceSnapshot: Number(raw?.unit_price_snapshot ?? 0),
+    wasteFactorSnapshot: Number(raw?.waste_factor_snapshot ?? 0),
+    subTotal: Number(raw?.sub_total ?? 0),
     unitSymbol: raw?.unit_symbol,
   };
 }
@@ -310,8 +312,9 @@ export function mapFieldDefinitionFromAPI(raw: RawFieldDefinition): FieldDefinit
     label: raw.label,
     labelAr: raw.label_ar,
     required: raw.required,
-    defaultValue: raw.default_value,
-    sortOrder: raw.sort_order,
+    // Force Number() coercion: postgres drivers can return numerics as strings
+    defaultValue: Number(raw.default_value ?? 0),
+    sortOrder: Number(raw.sort_order ?? 0),
     unitSymbol: raw.unit_symbol,
     isComputed: raw.is_computed,
   };
