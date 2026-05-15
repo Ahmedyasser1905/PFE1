@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, SafeAreaView } from 'react-native';
 import { WifiOff, ServerCrash, AlertTriangle, RefreshCcw } from 'lucide-react-native';
+import { useLanguage } from '~/context/LanguageContext';
 
 export type ErrorType = 'network' | 'server' | 'unknown';
 
@@ -19,27 +20,28 @@ export function ErrorScreen({
   onRetry,
   fullScreen = false,
 }: ErrorScreenProps) {
+  const { t } = useLanguage();
   
   const getErrorContent = () => {
     switch (type) {
       case 'network':
         return {
           icon: <WifiOff size={56} color="#ef4444" />,
-          defaultTitle: 'No Internet Connection',
-          defaultMessage: 'Please check your connection and try again.',
+          defaultTitle: t('errors.network_title') || 'No Internet Connection',
+          defaultMessage: t('errors.network_msg') || 'Please check your connection and try again.',
         };
       case 'server':
         return {
           icon: <ServerCrash size={56} color="#f59e0b" />,
-          defaultTitle: 'Server Unreachable',
-          defaultMessage: 'Our servers are currently down. We are working on it.',
+          defaultTitle: t('errors.server_title') || 'Server Unreachable',
+          defaultMessage: t('errors.server_msg') || 'Our servers are currently down. We are working on it.',
         };
       case 'unknown':
       default:
         return {
           icon: <AlertTriangle size={56} color="#ef4444" />,
-          defaultTitle: 'Something went wrong',
-          defaultMessage: 'An unexpected error occurred. Please try again later.',
+          defaultTitle: t('errors.unknown_title') || 'Something went wrong',
+          defaultMessage: t('errors.unknown_msg') || 'An unexpected error occurred. Please try again later.',
         };
     }
   };
@@ -61,7 +63,7 @@ export function ErrorScreen({
       {onRetry && (
         <Pressable style={styles.retryButton} onPress={onRetry}>
           <RefreshCcw size={18} color="#fff" />
-          <Text style={styles.retryText}>Try Again</Text>
+          <Text style={styles.retryText}>{t('common.try_again') || 'Try Again'}</Text>
         </Pressable>
       )}
     </Container>

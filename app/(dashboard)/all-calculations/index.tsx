@@ -17,10 +17,12 @@ import { CalculationCard, CalculationItem } from '~/components/features/calculat
 import { EmptyState } from '~/components/ui/EmptyState';
 import { theme } from '~/constants/theme';
 import { Skeleton } from '~/components/ui/Skeleton';
+import { useLanguage } from '~/context/LanguageContext';
 
 export default function AllCalculationsScreen() {
    const router = useRouter();
    const { projectId } = useLocalSearchParams<{ projectId?: string }>();
+   const { t } = useLanguage();
 
    // Fetch remote calculations for the project (or all projects if no projectId)
    const { items, loading } = useEstimationHistory({ projectId });
@@ -67,8 +69,8 @@ export default function AllCalculationsScreen() {
          <View style={styles.container}>
             <EmptyState
                icon={<LayoutGrid size={48} color={theme.colors.textMuted} />}
-               title="No calculations found"
-               description="Calculations you save to this project will appear here."
+               title={t('calculations.no_calculations_title', { defaultValue: 'No calculations found' })}
+               description={t('calculations.no_calculations_desc', { defaultValue: 'Calculations you save to this project will appear here.' })}
             />
          </View>
       );

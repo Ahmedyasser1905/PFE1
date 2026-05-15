@@ -22,33 +22,33 @@ export default function PrivacyScreen() {
           <Shield size={32} color={theme.colors.primary} />
         </View>
 
-        <Text style={styles.lastUpdated}>Last Updated: May 2024</Text>
+        <Text style={styles.lastUpdated}>{t('privacy_auth.last_updated')}</Text>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>1. Data Collection</Text>
+          <Text style={styles.sectionTitle}>{t('privacy_auth.section_1_title')}</Text>
           <Text style={styles.text}>
-            We collect information you provide directly to us, such as account details and project estimation data, to provide and improve our services.
+            {t('privacy_auth.section_1_content')}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>2. Use of Information</Text>
+          <Text style={styles.sectionTitle}>{t('privacy_auth.section_2_title')}</Text>
           <Text style={styles.text}>
-            Your estimation data is used only within the app for your projects. We do not sell or share your personal data with third parties.
+            {t('privacy_auth.section_2_content')}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. Local Storage</Text>
+          <Text style={styles.sectionTitle}>{t('privacy_auth.section_3_title')}</Text>
           <Text style={styles.text}>
-            Some project data is stored locally on your device for offline access. You can clear this data through the application settings or by deleting the app.
+            {t('privacy_auth.section_3_content')}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>4. Security</Text>
+          <Text style={styles.sectionTitle}>{t('privacy_auth.section_4_title')}</Text>
           <Text style={styles.text}>
-            We take reasonable measures to protect your data from loss, theft, and unauthorized access.
+            {t('privacy_auth.section_4_content')}
           </Text>
         </View>
       </ScrollView>

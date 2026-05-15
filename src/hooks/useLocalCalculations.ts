@@ -34,6 +34,7 @@ export interface LocalCalculation {
   created_at?: string;
   isLocal: boolean;
   materialLines?: MaterialLine[];
+  serviceLines?: any[];
 }
 
 interface UseLocalCalculationsOptions {

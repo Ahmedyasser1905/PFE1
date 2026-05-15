@@ -36,7 +36,7 @@ interface ResolvedInput {
 export default function CalculationDetailsScreen() {
    const router = useRouter();
    const { id, projectId, isReadOnly } = useLocalSearchParams<{ id: string; projectId?: string; isReadOnly?: string }>();
-   const { language } = useLanguage();
+   const { language, t, isRTL } = useLanguage();
    const isLocked = isReadOnly === 'true';
 
    const [calc, setCalc] = useState<LocalCalculation | null>(null);
@@ -80,6 +80,7 @@ export default function CalculationDetailsScreen() {
                      createdAt: remoteLeaf.createdAt,
                      isLocal: false,
                      materialLines: remoteLeaf.materialLines,
+                     serviceLines: remoteLeaf.serviceLines,
                   });
                }
             } catch (err) {
@@ -187,11 +188,11 @@ export default function CalculationDetailsScreen() {
       if (!calc) return;
 
       showFeedback({
-         title: 'Delete Calculation',
-         message: 'Remove this record?',
+         title: t('calc_details.delete_title') || 'Delete Calculation',
+         message: t('calc_details.delete_msg') || 'Remove this record?',
          type: 'warning',
-         primaryText: 'Delete',
-         secondaryText: 'Cancel',
+         primaryText: t('common.delete') || 'Delete',
+         secondaryText: t('common.cancel') || 'Cancel',
          onPrimary: async () => {
             if (calc.isLocal) {
                // Delete from local storage
@@ -209,8 +210,8 @@ export default function CalculationDetailsScreen() {
                   await estimationApi.deleteLeaf(id);
                } catch (err: any) {
                   showFeedback({
-                     title: 'Error',
-                     message: JSON.stringify(err?.response?.data || err?.message || 'Failed to delete from server.'),
+                     title: t('common.error') || 'Error',
+                     message: JSON.stringify(err?.response?.data || err?.message || t('calc_details.delete_failed') || 'Failed to delete from server.'),
                      type: 'error',
                   });
                   return;
@@ -219,10 +220,11 @@ export default function CalculationDetailsScreen() {
             router.back();
          },
       });
-   }, [id, calc, router, showFeedback]);
+   }, [id, calc, router, showFeedback, t]);
 
-   const title = calc ? (calc.type || calc.subCategory || calc.category || 'Calculation') : '';
+   const title = calc ? (calc.type || calc.subCategory || calc.category || t('calc_details.calculation') || 'Calculation') : '';
    const materialLines: MaterialLine[] = calc?.materialLines || [];
+   const serviceLines: any[] = calc?.serviceLines || [];
 
    // ── Loading state ──────────────────────────────────────────────────────────
    if (loading) {
@@ -251,9 +253,9 @@ export default function CalculationDetailsScreen() {
          {!calc ? (
             <EmptyState
                icon={<Calculator size={48} color={theme.colors.textMuted} />}
-               title="Calculation Not Found"
-               description="This calculation may have been removed or is no longer available."
-               actionLabel="Go Back"
+               title={t('calc_details.not_found_title') || "Calculation Not Found"}
+               description={t('calc_details.not_found_desc') || "This calculation may have been removed or is no longer available."}
+               actionLabel={t('common.go_back') || "Go Back"}
                onAction={() => router.back()}
             />
          ) : (
@@ -279,9 +281,9 @@ export default function CalculationDetailsScreen() {
 
                {/* ── Input Parameters ── */}
                <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
+                  <View style={[styles.sectionHeader, isRTL && { flexDirection: 'row-reverse' }]}>
                      <Component size={18} color={theme.colors.textSecondary} />
-                     <Text style={styles.sectionTitle}>Input Parameters</Text>
+                     <Text style={[styles.sectionTitle, isRTL && { textAlign: 'right' }]}>{t('calc_details.input_parameters') || 'Input Parameters'}</Text>
                   </View>
                   <View style={styles.card}>
                      {loadingLabels ? (
@@ -300,16 +302,16 @@ export default function CalculationDetailsScreen() {
                            </View>
                         ))
                      ) : (
-                        <Text style={styles.noDataText}>No input parameters recorded.</Text>
+                        <Text style={styles.noDataText}>{t('calc_details.no_input_params') || 'No input parameters recorded.'}</Text>
                      )}
                   </View>
                </View>
 
                {/* ── Calculated Results ── */}
                <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
+                  <View style={[styles.sectionHeader, isRTL && { flexDirection: 'row-reverse' }]}>
                      <Target size={18} color={theme.colors.success} />
-                     <Text style={styles.sectionTitle}>Calculated Results</Text>
+                     <Text style={[styles.sectionTitle, isRTL && { textAlign: 'right' }]}>{t('calc_details.calculated_results') || 'Calculated Results'}</Text>
                   </View>
                   <View style={styles.card}>
                      {calc.results && Object.keys(calc.results).length > 0 ? (
@@ -324,9 +326,9 @@ export default function CalculationDetailsScreen() {
                            </View>
                         ))
                      ) : (
-                        <View style={styles.row}>
-                           <Text style={styles.rowLabel}>ESTIMATED COST</Text>
-                           <Text style={styles.rowValue}>
+                         <View style={[styles.row, isRTL && { flexDirection: 'row-reverse' }]}>
+                            <Text style={[styles.rowLabel, isRTL && { textAlign: 'right' }]}>{t('calc_details.estimated_cost') || 'ESTIMATED COST'}</Text>
+                            <Text style={styles.rowValue}>
                               {Number(calc.result).toLocaleString()} DZD
                            </Text>
                         </View>
@@ -339,7 +341,7 @@ export default function CalculationDetailsScreen() {
                   <View style={styles.section}>
                      <View style={styles.sectionHeader}>
                         <Package size={18} color={theme.colors.warning} />
-                        <Text style={styles.sectionTitle}>Material Breakdown</Text>
+                        <Text style={[styles.sectionTitle, isRTL && { textAlign: 'right' }]}>{t('history.material_breakdown', { defaultValue: 'Material Breakdown' })}</Text>
                      </View>
                      <View style={styles.card}>
                         {materialLines.map((ml, idx) => {
@@ -347,8 +349,8 @@ export default function CalculationDetailsScreen() {
                               ? (ml.materialNameAr || ml.materialName)
                               : (ml.materialNameEn || ml.materialName);
                            return (
-                              <View style={styles.materialRow} key={ml.materialId || idx}>
-                                 <View style={styles.materialInfo}>
+                              <View style={[styles.materialRow, isRTL && { flexDirection: 'row-reverse' }]} key={ml.materialId || idx}>
+                                 <View style={[styles.materialInfo, isRTL && { alignItems: 'flex-end' }]}>
                                     <View style={styles.materialNameRow}>
                                        <Text style={styles.materialName}>{displayName}</Text>
                                        <View style={[
@@ -358,19 +360,19 @@ export default function CalculationDetailsScreen() {
                                           <Text style={[
                                              styles.materialTypeText,
                                              ml.materialType === 'PRIMARY' ? styles.primaryText : styles.accessoryText
-                                          ]}>
-                                             {ml.materialType}
-                                          </Text>
+                                           ]}>
+                                              {ml.materialType === 'PRIMARY' ? (t('calc_details.primary_badge') || 'PRIMARY') : (t('calc_details.accessory_badge') || 'ACCESSORY')}
+                                           </Text>
                                        </View>
                                     </View>
                                     <Text style={styles.materialDetail}>
                                        {ml.quantityWithWaste.toFixed(2)} {ml.unitSymbol || 'unit'} × {ml.unitPriceSnapshot.toLocaleString()} DZD
                                     </Text>
-                                    {ml.appliedWaste > 0 && (
-                                       <Text style={styles.wasteText}>
-                                          Waste: {(ml.appliedWaste * 100).toFixed(1)}% ({ml.quantity.toFixed(2)} → {ml.quantityWithWaste.toFixed(2)})
-                                       </Text>
-                                    )}
+                                     {ml.appliedWaste > 0 && (
+                                        <Text style={styles.wasteText}>
+                                           {t('calc_details.waste') || 'Waste'}: {(ml.appliedWaste * 100).toFixed(1)}% ({ml.quantity.toFixed(2)} → {ml.quantityWithWaste.toFixed(2)})
+                                        </Text>
+                                     )}
                                  </View>
                                  <Text style={styles.materialCost}>
                                     {ml.subTotal.toLocaleString()} DZD
@@ -382,15 +384,54 @@ export default function CalculationDetailsScreen() {
                   </View>
                )}
 
+               {/* ── Services Breakdown (from API) ── */}
+               {serviceLines.length > 0 && (
+                  <View style={styles.section}>
+                     <View style={styles.sectionHeader}>
+                        <Layers size={18} color={theme.colors.info} />
+                        <Text style={[styles.sectionTitle, isRTL && { textAlign: 'right' }]}>{t('history.services_breakdown', { defaultValue: 'Services Breakdown' })}</Text>
+                     </View>
+                     <View style={styles.card}>
+                        {serviceLines.map((sl, idx) => {
+                           const displayName = language === 'ar'
+                              ? (sl.serviceNameAr || sl.serviceName)
+                              : (sl.serviceNameEn || sl.serviceName);
+                           return (
+                              <View style={[styles.materialRow, isRTL && { flexDirection: 'row-reverse' }]} key={sl.serviceId || idx}>
+                                 <View style={[styles.materialInfo, isRTL && { alignItems: 'flex-end' }]}>
+                                    <View style={styles.materialNameRow}>
+                                       <Text style={styles.materialName}>{displayName}</Text>
+                                        <View style={[styles.materialTypeBadge, { backgroundColor: theme.colors.infoLight }]}>
+                                           <Text style={[styles.materialTypeText, { color: theme.colors.info }]}>
+                                              {t('calc_details.service_badge') || 'SERVICE'}
+                                           </Text>
+                                        </View>
+                                    </View>
+                                    <Text style={styles.materialDetail}>
+                                       {sl.quantity.toFixed(2)} {sl.unitSymbol || 'unit'} × {sl.unitPriceSnapshot.toLocaleString()} DZD
+                                    </Text>
+                                 </View>
+                                 <Text style={styles.materialCost}>
+                                    {sl.subTotal.toLocaleString()} DZD
+                                 </Text>
+                              </View>
+                           )
+                        })}
+                     </View>
+                  </View>
+               )}
+
                {/* ── Summary Highlight ── */}
                <View style={styles.summaryCard}>
-                  <Text style={styles.summaryLabel}>Final Estimation</Text>
+                  <Text style={styles.summaryLabel}>{t('history.final_estimation', { defaultValue: 'Final Estimation' })}</Text>
                   <Text style={styles.summaryValue}>DZD {Number(calc.result).toLocaleString()}</Text>
-                  {materialLines.length > 0 && (
-                     <Text style={styles.summaryMeta}>
-                        {materialLines.length} material{materialLines.length > 1 ? 's' : ''}
-                     </Text>
-                  )}
+                   {(materialLines.length > 0 || serviceLines.length > 0) && (
+                      <Text style={styles.summaryMeta}>
+                         {materialLines.length > 0 ? t('calc_details.materials_count', { count: materialLines.length, defaultValue: `${materialLines.length} material(s)` }) : ''}
+                         {materialLines.length > 0 && serviceLines.length > 0 ? ' · ' : ''}
+                         {serviceLines.length > 0 ? t('calc_details.services_count', { count: serviceLines.length, defaultValue: `${serviceLines.length} service(s)` }) : ''}
+                      </Text>
+                   )}
                </View>
             </ScrollView>
          )}

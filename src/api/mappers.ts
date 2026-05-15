@@ -165,6 +165,26 @@ export function mapMaterialLineFromAPI(raw: RawMaterialLine): MaterialLine {
   };
 }
 
+// ─── Service Line Mapper ──────────────────────────────────────────────────────
+
+export function mapServiceLineFromAPI(raw: any): any {
+  if (!raw) return null;
+  return {
+    serviceId: raw.service_id || '',
+    serviceName: raw.service_name || 'Unknown Service',
+    serviceNameEn: raw.service_name_en || raw.service_name || '',
+    serviceNameAr: raw.service_name_ar || '',
+    quantity: Number(raw.quantity ?? 0),
+    unitSymbol: raw.unit_symbol || '',
+    unitPrice: Number(raw.unit_price ?? 0),
+    unitPriceSnapshot: Number(raw.unit_price_snapshot ?? raw.unit_price ?? 0),
+    equipmentCost: Number(raw.equipment_cost ?? 0),
+    manpowerCost: Number(raw.manpower_cost ?? 0),
+    installLaborPrice: Number(raw.install_labor_price ?? 0),
+    subTotal: Number(raw.sub_total ?? 0),
+  };
+}
+
 // ─── Intermediate Result Mapper ───────────────────────────────────────────────
 
 export function mapIntermediateResultFromAPI(raw: RawIntermediateResult): IntermediateResult {
@@ -224,10 +244,20 @@ export function mapCalculationResultFromAPI(raw: RawCalculationResult): Calculat
     console.warn('[Mapper] Failed to map material_lines:', e);
   }
 
+  let serviceLines: any[] = [];
+  try {
+    serviceLines = (raw?.service_lines || [])
+      .filter((sl: any) => sl != null)
+      .map(mapServiceLineFromAPI);
+  } catch (e) {
+    console.warn('[Mapper] Failed to map service_lines:', e);
+  }
+
   return {
     results,
     intermediateResults,
     materialLines,
+    serviceLines,
     // Force Number() coercion: postgres drivers can return numerics as strings in some configs
     totalCost: Number(raw?.total_cost ?? 0),
   };
@@ -243,6 +273,15 @@ export function mapSavedLeafFromAPI(raw: RawSavedLeafCalculation): SavedLeafCalc
       .map(mapMaterialLineFromAPI);
   } catch (e) {
     console.warn('[Mapper] Failed to map saved leaf material_lines:', e);
+  }
+
+  let serviceLines: any[] = [];
+  try {
+    serviceLines = (raw?.service_lines || [])
+      .filter((sl: any) => sl != null)
+      .map(mapServiceLineFromAPI);
+  } catch (e) {
+    console.warn('[Mapper] Failed to map saved leaf service_lines:', e);
   }
 
     // Server calculates leaf_total by summing material lines.
@@ -275,6 +314,7 @@ export function mapSavedLeafFromAPI(raw: RawSavedLeafCalculation): SavedLeafCalc
       createdAt: raw?.created_at || new Date().toISOString(),
       leafTotal,
       materialLines,
+      serviceLines,
     };
 }
 

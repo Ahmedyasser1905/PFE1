@@ -20,6 +20,7 @@ import { BUDGET_OPTIONS } from '~/constants/config';
 import { useSubscriptionContext } from '~/context/SubscriptionContext';
 import { NativeSelect } from '~/components/ui/NativeSelect';
 import { useFeedback } from '~/context/FeedbackContext';
+import { useLanguage } from '~/context/LanguageContext';
 
 interface Budget {
   id: string;
@@ -42,6 +43,7 @@ export default function CreateProject() {
   const router = useRouter();
   const { canCreateProject } = useSubscriptionContext();
   const { showSuccess, showError, showWarning, showSubscription } = useFeedback();
+  const { t, isRTL } = useLanguage();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -58,7 +60,7 @@ export default function CreateProject() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== 'granted') {
-        showError('Permission Denied', 'Gallery permission is required.');
+        showError(t('common.error'), t('projects.gallery_permission_required'));
         return;
       }
 
@@ -76,24 +78,24 @@ export default function CreateProject() {
       }
     } catch (error) {
       console.log('[IMAGE PICKER] Error:', error);
-      showError('Image Error', 'Failed to pick image');
+      showError(t('common.error'), t('projects.failed_pick_image'));
     }
   };
 
   // 🚀 CREATE PROJECT
   const handleCreate = async () => {
     if (!name.trim()) {
-      showError('Missing Field', 'Project name is required');
+      showError(t('projects.missing_field'), t('projects.name_required'));
       return;
     }
 
     if (!type) {
-      showError('Missing Field', 'Select a project type');
+      showError(t('projects.missing_field'), t('projects.select_type'));
       return;
     }
 
     if (!canCreateProject) {
-      showSubscription('You reached your current plan limit.', () => {
+      showSubscription(t('premium.limit_desc'), () => {
         router.push('/(dashboard)/settings/subscription');
       });
       return;
@@ -150,7 +152,7 @@ export default function CreateProject() {
         response = await estimationApi.createProject(payload);
       }
 
-      showSuccess('Project Created', 'Your project has been created successfully.');
+      showSuccess(t('projects.created_title'), t('projects.created_msg'));
       router.replace('/(dashboard)/projects');
 
     } catch (error: any) {
@@ -182,22 +184,22 @@ export default function CreateProject() {
             />
             {uploadedImageUrl && (
               <View style={styles.uploadedBadge}>
-                <Text style={styles.uploadedBadgeText}>✓ Ready</Text>
+                <Text style={styles.uploadedBadgeText}>✓ {t('projects.ready')}</Text>
               </View>
             )}
           </>
         ) : (
           <View style={styles.placeholder}>
             <Camera size={32} color={theme.colors.textMuted} />
-            <Text style={styles.placeholderText}>Add Image</Text>
+            <Text style={styles.placeholderText}>{t('projects.add_image')}</Text>
           </View>
         )}
       </Pressable>
 
       <View style={styles.form}>
         <TextInput
-          style={styles.input}
-          placeholder="Project Name"
+          style={[styles.input, isRTL && styles.rtlInput]}
+          placeholder={t('projects.project_name')}
           placeholderTextColor={theme.colors.textMuted}
           value={name}
           onChangeText={setName}
@@ -205,17 +207,17 @@ export default function CreateProject() {
         />
 
         <NativeSelect
-          label="Type"
+          label={t('projects.type')}
           value={type}
           options={PROJECT_TYPES}
           keyExtractor={(i) => i}
-          labelExtractor={(i) => i}
+          labelExtractor={(i) => t(`projects.type_${i.toLowerCase()}`, { defaultValue: i })}
           onSelect={setType}
         />
 
         <TextInput
-          style={styles.input}
-          placeholder="Location"
+          style={[styles.input, isRTL && styles.rtlInput]}
+          placeholder={t('projects.location')}
           placeholderTextColor={theme.colors.textMuted}
           value={location}
           onChangeText={setLocation}
@@ -223,17 +225,17 @@ export default function CreateProject() {
         />
 
         <NativeSelect
-          label="Budget"
+          label={t('projects.budget')}
           value={selectedBudget}
           options={budgets}
           keyExtractor={(i) => i.id}
-          labelExtractor={(i) => i.label}
+          labelExtractor={(i) => t(`projects.budget_${i.id.toLowerCase()}`, { defaultValue: i.label })}
           onSelect={setSelectedBudget}
         />
 
         <TextInput
-          style={styles.descriptionInput}
-          placeholder="Description"
+          style={[styles.descriptionInput, isRTL && styles.rtlInput]}
+          placeholder={t('projects.description')}
           placeholderTextColor={theme.colors.textMuted}
           value={description}
           onChangeText={setDescription}
@@ -249,7 +251,7 @@ export default function CreateProject() {
           {loading ? (
             <ActivityIndicator color={theme.colors.white} />
           ) : (
-            <Text style={styles.btnText}>Create Project</Text>
+            <Text style={styles.btnText}>{t('home.create')}</Text>
           )}
         </Pressable>
       </View>
@@ -316,6 +318,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     color: theme.colors.text,
     ...theme.typography.body,
+    textAlign: 'left',
   } as TextStyle,
   button: {
     backgroundColor: theme.colors.primary,
@@ -342,6 +345,10 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     ...theme.typography.body,
     height: 100, 
-    textAlignVertical: 'top'
+    textAlignVertical: 'top',
+    textAlign: 'left',
+  } as TextStyle,
+  rtlInput: {
+    textAlign: 'right',
   } as TextStyle,
 });

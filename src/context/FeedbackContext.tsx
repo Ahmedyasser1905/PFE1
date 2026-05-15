@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { AppFeedback, FeedbackType } from '~/components/ui/AppFeedback';
+import { useLanguage } from '~/context/LanguageContext';
 
 interface FeedbackOptions {
   title: string;
@@ -41,6 +42,7 @@ export const showGlobalFeedback = (options: FeedbackOptions) => {
 export const FeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [visible, setVisible] = useState(false);
   const [config, setConfig] = useState<FeedbackOptions>({ title: '' });
+  const { t } = useLanguage();
 
   const showFeedback = useCallback((options: FeedbackOptions) => {
     setConfig(options);
@@ -63,20 +65,20 @@ export const FeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       message, 
       type: 'success', 
       autoClose: true, 
-      primaryText: 'Great',
+      primaryText: t('common.great') || 'Great',
       ...options 
     });
-  }, [showFeedback]);
+  }, [showFeedback, t]);
 
   const showError = useCallback((title: string, message?: string, options?: Partial<FeedbackOptions>) => {
     showFeedback({ 
       title, 
       message, 
       type: 'error', 
-      primaryText: 'Understood',
+      primaryText: t('common.understood') || 'Understood',
       ...options 
     });
-  }, [showFeedback]);
+  }, [showFeedback, t]);
 
   const showWarning = useCallback((title: string, message?: string, options?: Partial<FeedbackOptions>) => {
     showFeedback({ 
@@ -98,27 +100,27 @@ export const FeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const showNetworkError = useCallback((onRetry?: () => void, options?: Partial<FeedbackOptions>) => {
     showFeedback({
-      title: 'Connection Issue',
-      message: 'We are having trouble reaching our servers. Please check your internet.',
+      title: t('errors.connection_title') || 'Connection Issue',
+      message: t('errors.connection_msg') || 'We are having trouble reaching our servers. Please check your internet.',
       type: 'network',
-      primaryText: 'Try Again',
-      secondaryText: 'Cancel',
+      primaryText: t('common.try_again') || 'Try Again',
+      secondaryText: t('common.cancel') || 'Cancel',
       onPrimary: onRetry,
       ...options
     });
-  }, [showFeedback]);
+  }, [showFeedback, t]);
 
   const showSubscription = useCallback((message?: string, onSubscribe?: () => void, options?: Partial<FeedbackOptions>) => {
     showFeedback({
-      title: 'Premium Feature',
-      message: message || 'This feature requires an active subscription.',
+      title: t('premium.feature_title') || 'Premium Feature',
+      message: message || t('premium.feature_desc') || 'This feature requires an active subscription.',
       type: 'subscription',
-      primaryText: 'View Plans',
-      secondaryText: 'Maybe Later',
+      primaryText: t('common.view_plans') || 'View Plans',
+      secondaryText: t('common.maybe_later') || 'Maybe Later',
       onPrimary: onSubscribe,
       ...options
     });
-  }, [showFeedback]);
+  }, [showFeedback, t]);
 
   const showLoading = useCallback((title: string, message?: string, options?: Partial<FeedbackOptions>) => {
     showFeedback({

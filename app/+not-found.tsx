@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Home, Compass, Map } from 'lucide-react-native';
+import { useLanguage } from '~/context/LanguageContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '~/constants/theme';
 import { BaseButton } from '~/components/ui/BaseButton';
 export default function NotFoundScreen() {
     const router = useRouter();
+    const { t } = useLanguage();
     return (
         <SafeAreaView style={styles.container}>
             <Stack.Screen options={{ title: 'Oops!', headerShown: false }} />
@@ -17,13 +19,13 @@ export default function NotFoundScreen() {
                         <Compass size={40} color="white" />
                     </View>
                 </View>
-                <Text style={styles.errorCode}>404</Text>
-                <Text style={styles.title}>Lost on the Job Site?</Text>
+                <Text style={styles.errorCode}>{t('not_found.error_code') || '404'}</Text>
+                <Text style={styles.title}>{t('not_found.title') || 'Lost on the Job Site?'}</Text>
                 <Text style={styles.subtitle}>
-                    We couldn't find the page you're looking for. It might have been moved, deleted, or never existed in the blue prints.
+                    {t('not_found.subtitle') || "We couldn't find the page you're looking for. It might have been moved, deleted, or never existed in the blue prints."}
                 </Text>
                 <BaseButton
-                    title="Back to Dashboard"
+                    title={t('not_found.back_to_dashboard') || "Back to Dashboard"}
                     onPress={() => router.replace('/(dashboard)')}
                     icon={Home}
                     style={styles.button}
@@ -32,11 +34,11 @@ export default function NotFoundScreen() {
                     style={styles.link}
                     onPress={() => router.back()}
                 >
-                    <Text style={styles.linkText}>Go back to previous page</Text>
+                    <Text style={styles.linkText}>{t('not_found.go_back_previous') || 'Go back to previous page'}</Text>
                 </TouchableOpacity>
             </View>
             <View style={styles.footer}>
-                <Text style={styles.footerText}>Apex Error Reporting System</Text>
+                <Text style={styles.footerText}>{t('not_found.footer') || 'Apex Error Reporting System'}</Text>
             </View>
         </SafeAreaView>
     );

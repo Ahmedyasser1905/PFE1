@@ -37,6 +37,7 @@ import type { LeafDetail, CalculationResult, Formula, FieldDefinition, MaterialC
 import { NativeSelect } from '~/components/ui/NativeSelect';
 import { Skeleton } from '~/components/ui/Skeleton';
 import { ErrorScreen } from '~/components/ui/ErrorScreen';
+import { useLanguage } from '~/context/LanguageContext';
 import { useFeedback } from '~/context/FeedbackContext';
 
 const { width } = Dimensions.get('window');
@@ -419,11 +420,11 @@ const styles = StyleSheet.create({
 
 // ── Components ───────────────────────────────
 
-const ResultItem = ({ label, value, unit, isTotal }: { label: string; value: string; unit: string; isTotal?: boolean }) => (
+const ResultItem = ({ label, value, unit, isTotal, isRTL }: { label: string; value: string; unit: string; isTotal?: boolean; isRTL?: boolean }) => (
 
-  <View style={[styles.resultItem, isTotal && styles.resultItemTotal]}>
+  <View style={[styles.resultItem, isTotal && styles.resultItemTotal, isRTL && { flexDirection: 'row-reverse' }] as any}>
     <Text style={[styles.resultLabel, isTotal && styles.resultLabelTotal]}>{label}</Text>
-    <View style={styles.resultValueRow}>
+    <View style={[styles.resultValueRow, isRTL && { flexDirection: 'row-reverse' }] as any}>
       <Text style={[styles.resultValue, isTotal && styles.resultValueTotal]}>{value}</Text>
       <Text style={[styles.resultUnit, isTotal && styles.resultUnitTotal]}>{unit}</Text>
     </View>
@@ -450,11 +451,13 @@ export default function LeafCalculationScreen() {
   const [calculating, setCalculating] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Derived Display Strings
-  const displayTitle = (title || leaf?.nameEn || 'Category').toString();
-  const displayProjectName = (projectTitle || 'Project').toString();
   const { canCalculate, hasSubscription, incrementCalculationUsage } = useSubscriptionContext();
   const { showFeedback } = useFeedback();
+  const { t, isRTL, isArabic } = useLanguage();
+
+  // Derived Display Strings
+  const displayTitle = (title || (isArabic && leaf?.nameAr ? leaf.nameAr : leaf?.nameEn) || t('projects.category_default', { defaultValue: 'Category' })).toString();
+  const displayProjectName = (projectTitle || t('projects.project_default', { defaultValue: 'Project' })).toString();
 
   // Selection
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
@@ -675,8 +678,21 @@ export default function LeafCalculationScreen() {
           waste_factor_snapshot: Number(ml.wasteFactorSnapshot ?? ml.waste_factor_snapshot ?? 0) || 0,
           sub_total: Number(ml.subTotal ?? ml.sub_total ?? 0) || 0,
         })),
-        // Plan §6.4: service_lines must always be present even when empty
-        service_lines: [],
+        // Plan §6.4: service_lines — pass through from engine results
+        service_lines: (results.serviceLines || []).map((sl: any) => ({
+          service_id: String(sl.serviceId || sl.service_id || ''),
+          service_name: String(sl.serviceName || sl.service_name || 'Unknown Service'),
+          service_name_en: String(sl.serviceNameEn || sl.service_name_en || ''),
+          service_name_ar: String(sl.serviceNameAr || sl.service_name_ar || ''),
+          quantity: Number(sl.quantity) || 0,
+          unit_symbol: String(sl.unitSymbol || sl.unit_symbol || ''),
+          unit_price: Number(sl.unitPrice || sl.unit_price || 0),
+          unit_price_snapshot: Number(sl.unitPriceSnapshot || sl.unit_price_snapshot || 0),
+          equipment_cost: Number(sl.equipmentCost || sl.equipment_cost || 0),
+          manpower_cost: Number(sl.manpowerCost || sl.manpower_cost || 0),
+          install_labor_price: Number(sl.installLaborPrice || sl.install_labor_price || 0),
+          sub_total: Number(sl.subTotal || sl.sub_total || 0),
+        })),
       };
 
       if (__DEV__) {
@@ -722,7 +738,7 @@ export default function LeafCalculationScreen() {
       <SafeAreaView style={styles.container} edges={['bottom']}>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          <View style={styles.titleSection}>
+          <View style={[styles.titleSection, isRTL && { flexDirection: 'row-reverse' }]}>
             <Skeleton width={48} height={48} borderRadius={24} />
             <View style={styles.skeletonTextContainer}>
               <Skeleton width="60%" height={24} />
@@ -755,8 +771,8 @@ export default function LeafCalculationScreen() {
               <LayoutGrid size={24} color={theme.colors.primary} />
             </View>
             <View style={styles.flex1}>
-              <Text style={styles.pageTitle}>{displayTitle}</Text>
-              <Text style={styles.pageSubtitle}>Select a sub-category to continue</Text>
+              <Text style={[styles.pageTitle, isRTL && { textAlign: 'right' }]}>{displayTitle}</Text>
+              <Text style={[styles.pageSubtitle, isRTL && { textAlign: 'right' }]}>{t('projects.select_subcat_desc', { defaultValue: 'Select a sub-category to continue' })}</Text>
             </View>
           </View>
 
@@ -764,7 +780,7 @@ export default function LeafCalculationScreen() {
             {subcategories.map(sub => (
               <Pressable
                 key={sub.categoryId}
-                style={styles.subCatCard}
+                style={[styles.subCatCard, isRTL && { flexDirection: 'row-reverse' }]}
                 onPress={() => router.push({
                   pathname: '/(dashboard)/projects/[id]/category/[categoryId]',
                   params: { id, categoryId: sub.categoryId, title: sub.nameEn }
@@ -792,29 +808,29 @@ export default function LeafCalculationScreen() {
           </View>
           <View style={styles.flex1}>
             <Text style={styles.pageTitle}>{displayTitle}</Text>
-            <Text style={styles.pageSubtitle} numberOfLines={2}>Structural quantities configuration for construction items.</Text>
+            <Text style={[styles.pageSubtitle, isRTL && { textAlign: 'right' }]} numberOfLines={2}>{t('projects.structural_quantities_desc', { defaultValue: 'Structural quantities configuration for construction items.' })}</Text>
           </View>
         </View>
 
         {/* 3. Input Dimensions Card */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
+          <View style={[styles.cardHeader, isRTL && { flexDirection: 'row-reverse' }]}>
+            <View style={[styles.cardTitleRow, isRTL && { flexDirection: 'row-reverse' }]}>
               <Calculator size={16} color={theme.colors.primary} />
-              <Text style={styles.cardTitle}>INPUT DIMENSIONS</Text>
+              <Text style={[styles.cardTitle, isRTL && { textAlign: 'right' }]}>{t('projects.input_dimensions', { defaultValue: 'INPUT DIMENSIONS' })}</Text>
             </View>
             <Bookmark size={18} color="#CBD5E1" />
           </View>
 
           <View style={styles.cardBody}>
             {(selectedFormula?.fields || []).map((field) => (
-              <View key={field.fieldId} style={styles.inputGroup}>
+              <View key={field.fieldId} style={[styles.inputGroup, isRTL && { alignItems: 'flex-end' }]}>
                 <Text style={styles.inputLabel}>
                   {(field.label || '').toUpperCase()} {field.unitSymbol ? `(${(field.unitSymbol || '').toUpperCase()})` : ''}
                 </Text>
-                <View style={styles.inputWrapper}>
+                <View style={[styles.inputWrapper, isRTL && { flexDirection: 'row-reverse' }]}>
                   <TextInput
-                    style={styles.textInput}
+                    style={[styles.textInput, isRTL && { textAlign: 'right' }]}
                     value={fieldValues[field.fieldId] || ''}
                     onChangeText={(v) => handleInputChange(field.fieldId, v)}
                     keyboardType="decimal-pad"
@@ -828,8 +844,8 @@ export default function LeafCalculationScreen() {
 
             {leaf?.configs && leaf.configs.length > 0 && (
               <NativeSelect<MaterialConfig>
-                label="MATERIAL CONFIGURATION"
-                placeholder="Select Configuration"
+                label={t('projects.material_config', { defaultValue: 'MATERIAL CONFIGURATION' })}
+                placeholder={t('projects.select_config', { defaultValue: 'Select Configuration' })}
                 value={selectedConfig}
                 options={leaf.configs}
                 keyExtractor={(item) => item.configId}
@@ -848,13 +864,13 @@ export default function LeafCalculationScreen() {
               ) : (
                 <>
                   <Calculator size={20} color="#fff" />
-                  <Text style={styles.calculateBtnText}>CALCULATE ESTIMATION</Text>
+                  <Text style={styles.calculateBtnText}>{t('projects.calc_estimation', { defaultValue: 'CALCULATE ESTIMATION' })}</Text>
                 </>
               )}
             </Pressable>
 
             <Pressable style={styles.resetLink} onPress={handleReset}>
-              <Text style={styles.resetLinkText}>↺ RESET VALUES</Text>
+              <Text style={styles.resetLinkText}>↺ {t('projects.reset_values', { defaultValue: 'RESET VALUES' })}</Text>
             </Pressable>
           </View>
         </View>
@@ -864,10 +880,10 @@ export default function LeafCalculationScreen() {
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleRow}>
               <View style={styles.readyDot} />
-              <Text style={styles.resultsTitle}>RESULTS</Text>
+              <Text style={[styles.resultsTitle, isRTL && { textAlign: 'right' }]}>{t('projects.results', { defaultValue: 'RESULTS' })}</Text>
             </View>
             <View style={styles.readyBadge}>
-              <Text style={styles.readyBadgeText}>{results ? 'READY' : 'PENDING'}</Text>
+              <Text style={styles.readyBadgeText}>{results ? t('projects.ready', { defaultValue: 'READY' }) : t('projects.pending', { defaultValue: 'PENDING' })}</Text>
             </View>
           </View>
 
@@ -918,15 +934,42 @@ export default function LeafCalculationScreen() {
                 if (materials.length > 0) {
                   renderedItems.push(
                     <View key="materials-section" style={styles.materialsSection}>
-                      <Text style={styles.materialsHeader}>MATERIALS BREAKDOWN</Text>
+                      <Text style={[styles.materialsHeader, isRTL && { textAlign: 'right' }]}>{t('projects.materials_breakdown', { defaultValue: 'MATERIALS BREAKDOWN' })}</Text>
                       {materials.map((m: any, idx: number) => {
                         const name = m.materialNameEn || m.materialName || 'Material';
                         const qty = typeof m.quantityWithWaste === 'number' ? m.quantityWithWaste.toFixed(2) : '0.00';
                         const unit = m.unitSymbol || '';
                         const cost = typeof m.subTotal === 'number' ? m.subTotal.toFixed(2) : '0.00';
                         return (
-                          <View key={`mat-${idx}`} style={styles.materialRow}>
-                            <View style={styles.materialInfo}>
+                          <View key={`mat-${idx}`} style={[styles.materialRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                            <View style={[styles.materialInfo, isRTL && { alignItems: 'flex-end' }]}>
+                              <Text style={styles.materialName}>{name}</Text>
+                              <Text style={styles.materialQty}>{qty} {unit}</Text>
+                            </View>
+                            <View style={styles.materialCostBox}>
+                              <Text style={styles.materialCost}>{cost} DZD</Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  );
+                }
+
+                // 2b. Service Lines
+                const services = results.serviceLines || [];
+                if (services.length > 0) {
+                  renderedItems.push(
+                    <View key="services-section" style={styles.materialsSection}>
+                      <Text style={[styles.materialsHeader, { color: theme.colors.info }, isRTL && { textAlign: 'right' }]}>{t('projects.services_breakdown', { defaultValue: 'SERVICES BREAKDOWN' })}</Text>
+                      {services.map((s: any, idx: number) => {
+                        const name = isArabic ? (s.serviceNameAr || s.serviceName) : (s.serviceNameEn || s.serviceName) || 'Service';
+                        const qty = typeof s.quantity === 'number' ? s.quantity.toFixed(2) : '0.00';
+                        const unit = s.unitSymbol || '';
+                        const cost = typeof s.subTotal === 'number' ? s.subTotal.toFixed(2) : '0.00';
+                        return (
+                          <View key={`svc-${idx}`} style={[styles.materialRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                            <View style={[styles.materialInfo, isRTL && { alignItems: 'flex-end' }]}>
                               <Text style={styles.materialName}>{name}</Text>
                               <Text style={styles.materialQty}>{qty} {unit}</Text>
                             </View>
@@ -948,7 +991,7 @@ export default function LeafCalculationScreen() {
                   renderedItems.push(
                     <ResultItem
                       key="total-cost-item"
-                      label="TOTAL ESTIMATED COST"
+                      label={t('projects.total_estimated_cost', { defaultValue: 'TOTAL ESTIMATED COST' })}
                       value={results.totalCost.toFixed(2)}
                       unit="DZD"
                       isTotal
@@ -980,7 +1023,7 @@ export default function LeafCalculationScreen() {
             ) : (
               <>
                 <Bookmark size={20} color={theme.colors.primary} />
-                <Text style={styles.saveBtnText}>SAVE TO PROJECT HISTORY</Text>
+                <Text style={styles.saveBtnText}>{t('projects.save_to_history', { defaultValue: 'SAVE TO PROJECT HISTORY' })}</Text>
               </>
             )}
           </Pressable>
@@ -991,8 +1034,8 @@ export default function LeafCalculationScreen() {
         {/* 6. Formulas Card */}
         {leaf?.formulas && leaf.formulas.length > 0 && (
           <NativeSelect<Formula>
-            label="CALCULATION METHOD"
-            placeholder="Select Formula"
+            label={t('projects.calc_method', { defaultValue: 'CALCULATION METHOD' })}
+            placeholder={t('projects.select_formula', { defaultValue: 'Select Formula' })}
             value={selectedFormula}
             options={leaf.formulas}
             keyExtractor={(item) => item.formulaId}

@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import {
   HardHat,
   ChevronRight,
+  ChevronLeft,
   FolderOpen,
   AlertCircle,
   BarChart3,
@@ -28,6 +29,7 @@ import { Skeleton } from '~/components/ui/Skeleton';
 import { EmptyState } from '~/components/ui/EmptyState';
 import { ErrorScreen } from '~/components/ui/ErrorScreen';
 import { resolveImageUrl, FALLBACK_IMAGE } from '~/utils/imageResolver';
+import { useLanguage } from '~/context/LanguageContext';
 
 const styles = StyleSheet.create({
   container: { 
@@ -56,6 +58,9 @@ const styles = StyleSheet.create({
     gap: 4,
     borderWidth: 1,
     borderColor: theme.colors.divider,
+  } as ViewStyle,
+  filterTabsRtl: {
+    flexDirection: 'row-reverse',
   } as ViewStyle,
   filterTab: {
     flex: 1,
@@ -101,6 +106,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: theme.spacing.md,
   } as ViewStyle,
+  projectCardTopRtl: {
+    flexDirection: 'row-reverse',
+  } as ViewStyle,
   iconBox: {
     width: 48,
     height: 48,
@@ -129,12 +137,14 @@ const styles = StyleSheet.create({
     ...theme.typography.h3,
     color: theme.colors.text,
     marginBottom: 4,
+    textAlign: 'left',
   } as TextStyle,
   projectDesc: { 
     ...theme.typography.small,
     color: theme.colors.textSecondary, 
     lineHeight: 20, 
-    marginBottom: theme.spacing.md 
+    marginBottom: theme.spacing.md,
+    textAlign: 'left',
   } as TextStyle,
   projectStatsRow: {
     flexDirection: 'row',
@@ -142,10 +152,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: theme.spacing.md,
   } as ViewStyle,
+  projectStatsRowRtl: {
+    flexDirection: 'row-reverse',
+  } as ViewStyle,
   projectStat: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     gap: theme.spacing.xs 
+  } as ViewStyle,
+  projectStatRtl: {
+    flexDirection: 'row-reverse',
   } as ViewStyle,
   projectStatText: { 
     ...theme.typography.caption,
@@ -164,6 +180,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.divider,
   } as ViewStyle,
+  projectFooterRtl: {
+    flexDirection: 'row-reverse',
+  } as ViewStyle,
   projectId: { 
     ...theme.typography.caption,
     color: theme.colors.textMuted,
@@ -176,6 +195,9 @@ const styles = StyleSheet.create({
   loadingCard: { height: 160, marginBottom: 12 } as ViewStyle,
   badgeSuccess: { backgroundColor: theme.colors.success } as ViewStyle,
   badgePrimary: { backgroundColor: theme.colors.primaryLight } as ViewStyle,
+  rtlText: {
+    textAlign: 'right',
+  } as TextStyle,
 });
 
 type TabType = 'active' | 'completed';
@@ -184,6 +206,7 @@ export default function ProjectsScreen() {
   const router = useRouter();
   const { projects, loading, refreshing, error, refresh, refetch } = useProjects();
   const [activeTab, setActiveTab] = useState<TabType>('active');
+  const { t, isRTL } = useLanguage();
 
   const filtered = useMemo(
     () =>
@@ -208,7 +231,7 @@ export default function ProjectsScreen() {
             })
           }
         >
-          <View style={styles.projectCardTop}>
+          <View style={[styles.projectCardTop, isRTL && styles.projectCardTopRtl]}>
             <View style={styles.iconBox}>
               {project.imageUrl ? (
                 <Image
@@ -231,23 +254,23 @@ export default function ProjectsScreen() {
               ]}
             >
               <Text style={styles.statusText}>
-                {project.status.toUpperCase()}
+                {t(`projects.status_${project.status}`).toUpperCase()}
               </Text>
             </View>
           </View>
 
-          <Text style={styles.projectName}>{project.name}</Text>
+          <Text style={[styles.projectName, isRTL && styles.rtlText]}>{project.name}</Text>
           {project.description ? (
-            <Text style={styles.projectDesc} numberOfLines={2}>
+            <Text style={[styles.projectDesc, isRTL && styles.rtlText]} numberOfLines={2}>
               {project.description}
             </Text>
           ) : null}
 
-          <View style={styles.projectStatsRow}>
-            <View style={styles.projectStat}>
+          <View style={[styles.projectStatsRow, isRTL && styles.projectStatsRowRtl]}>
+            <View style={[styles.projectStat, isRTL && styles.projectStatRtl]}>
               <BarChart3 size={14} color={theme.colors.muted} />
               <Text style={styles.projectStatText}>
-                {project.leafCount || 0} Estimations
+                {project.leafCount || 0} {t('projects.estimations_count')}
               </Text>
             </View>
             {project.totalCost != null && !isNaN(Number(project.totalCost)) && (
@@ -255,34 +278,38 @@ export default function ProjectsScreen() {
             )}
           </View>
 
-          <View style={styles.projectFooter}>
+          <View style={[styles.projectFooter, isRTL && styles.projectFooterRtl]}>
             <Text style={styles.projectId}>{formatProjectId(project.projectId)}</Text>
-            <ChevronRight size={18} color={theme.colors.muted} />
+            {isRTL ? (
+              <ChevronLeft size={18} color={theme.colors.muted} />
+            ) : (
+              <ChevronRight size={18} color={theme.colors.muted} />
+            )}
           </View>
         </Pressable>
       );
     },
-    [router]
+    [router, isRTL, t]
   );
 
   if (loading && !refreshing) {
     return (
       <View style={styles.container}>
         <View style={styles.scrollContent}>
-          <View style={styles.filterTabs}>
+          <View style={[styles.filterTabs, isRTL && styles.filterTabsRtl]}>
             <Skeleton width="50%" height={40} borderRadius={8} />
             <Skeleton width="50%" height={40} borderRadius={8} />
           </View>
           {[1, 2, 3, 4].map((key) => (
             <View key={key} style={[styles.projectCard, styles.loadingCard]}>
-               <View style={styles.projectCardTop}>
+               <View style={[styles.projectCardTop, isRTL && styles.projectCardTopRtl]}>
                  <Skeleton width={44} height={44} borderRadius={12} />
                  <Skeleton width={80} height={24} borderRadius={6} />
                </View>
-               <Skeleton width="70%" height={20} style={styles.mb12} />
+               <Skeleton width="70%" height={20} style={[styles.mb12, isRTL && { alignSelf: 'flex-end' }] as any} />
                <Skeleton width="100%" height={14} style={styles.mb6} />
-               <Skeleton width="90%" height={14} style={styles.mb20} />
-               <View style={styles.projectFooter}>
+               <Skeleton width="90%" height={14} style={[styles.mb20, isRTL && { alignSelf: 'flex-end' }] as any} />
+               <View style={[styles.projectFooter, isRTL && styles.projectFooterRtl]}>
                  <Skeleton width={100} height={14} />
                </View>
             </View>
@@ -323,7 +350,7 @@ export default function ProjectsScreen() {
               onRetry={refetch}
             />
           ) : (
-            <View style={styles.filterTabs}>
+            <View style={[styles.filterTabs, isRTL && styles.filterTabsRtl]}>
               <Pressable
                 style={[styles.filterTab, activeTab === 'active' && styles.filterTabActive]}
                 onPress={() => setActiveTab('active')}
@@ -334,7 +361,7 @@ export default function ProjectsScreen() {
                     activeTab === 'active' && styles.filterTabTextActive,
                   ]}
                 >
-                  Active
+                  {t('projects.active')}
                 </Text>
               </Pressable>
               <Pressable
@@ -350,7 +377,7 @@ export default function ProjectsScreen() {
                     activeTab === 'completed' && styles.filterTabTextActive,
                   ]}
                 >
-                  Completed
+                  {t('projects.completed')}
                 </Text>
               </Pressable>
             </View>
@@ -359,9 +386,9 @@ export default function ProjectsScreen() {
         ListEmptyComponent={
           !error ? (
             <EmptyState
-              title="No projects yet"
-              description="Create your first project to get started with accurate estimations."
-              actionLabel="Start First Project"
+              title={t('projects.no_projects')}
+              description={t('projects.create_first')}
+              actionLabel={t('projects.start_first')}
               onAction={() => router.push('/projects/create')}
             />
           ) : null

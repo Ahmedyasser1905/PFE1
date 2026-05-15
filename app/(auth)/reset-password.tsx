@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ViewStyle, TextStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Lock, ArrowLeft, CheckCircle2 } from 'lucide-react-native';
+import { Lock, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { theme } from '~/constants/theme';
 import { Logo } from '~/components/ui/Logo';
@@ -9,6 +9,7 @@ import { BaseInput } from '~/components/ui/BaseInput';
 import { BaseButton } from '~/components/ui/BaseButton';
 import { authApi } from '~/api/api';
 import { useFeedback } from '~/context/FeedbackContext';
+import { useLanguage } from '~/context/LanguageContext';
 
 const styles = StyleSheet.create({
     container: {
@@ -28,6 +29,9 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginBottom: theme.spacing.xl,
         paddingHorizontal: 0,
+    } as ViewStyle,
+    backButtonRtl: {
+        alignSelf: 'flex-end',
     } as ViewStyle,
     header: {
         marginBottom: theme.spacing.xxl,
@@ -62,6 +66,12 @@ const styles = StyleSheet.create({
         marginTop: theme.spacing.lg,
         width: '100%',
     } as ViewStyle,
+    rtlText: {
+        textAlign: 'right',
+    } as TextStyle,
+    rtlTitle: {
+        textAlign: 'right',
+    } as TextStyle,
 });
 
 export default function ResetPasswordScreen() {
@@ -71,17 +81,19 @@ export default function ResetPasswordScreen() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const { showFeedback } = useFeedback();
+    const { t, isRTL } = useLanguage();
+
     const handleResetPassword = async () => {
         if (!password || !confirmPassword) {
-            showFeedback({ title: 'Error', message: 'Please fill in all fields', type: 'warning' });
+            showFeedback({ title: t('common.error'), message: t('auth.fill_all_fields'), type: 'warning' });
             return;
         }
         if (password !== confirmPassword) {
-            showFeedback({ title: 'Error', message: 'Passwords do not match', type: 'warning' });
+            showFeedback({ title: t('common.error'), message: t('auth.passwords_no_match'), type: 'warning' });
             return;
         }
         if (password.length < 6) {
-            showFeedback({ title: 'Error', message: 'Password must be at least 6 characters', type: 'warning' });
+            showFeedback({ title: t('common.error'), message: t('auth.password_min_length'), type: 'warning' });
             return;
         }
         try {
@@ -94,8 +106,8 @@ export default function ResetPasswordScreen() {
         } catch (error: any) {
             console.error('Reset password failed:', error.response?.data?.message || error.message);
             showFeedback({
-                title: 'Error',
-                message: JSON.stringify(error?.response?.data || error?.message || 'Invalid or expired token'),
+                title: t('common.error'),
+                message: JSON.stringify(error?.response?.data || error?.message || t('auth.invalid_expired_token')),
                 type: 'error'
             });
         } finally {
@@ -107,12 +119,12 @@ export default function ResetPasswordScreen() {
             <SafeAreaView style={styles.container}>
                 <View style={styles.successContent}>
                     <CheckCircle2 size={64} color={theme.colors.primary} />
-                    <Text style={styles.title}>Password Reset</Text>
+                    <Text style={styles.title}>{t('auth.password_reset_title')}</Text>
                     <Text style={styles.subtitle}>
-                        Your password has been successfully reset. You can now log in with your new password.
+                        {t('auth.password_reset_success')}
                     </Text>
                     <BaseButton
-                        title="Back to Login"
+                        title={t('auth.back_to_login_btn')}
                         onPress={() => router.replace('/')}
                         style={styles.submitButton}
                     />
@@ -128,42 +140,42 @@ export default function ResetPasswordScreen() {
             >
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     <BaseButton
-                        title="Back"
+                        title={t('common.back')}
                         onPress={() => {
                             if (router.canGoBack()) router.back();
                             else router.replace('/(auth)/login');
                         }}
                         variant="ghost"
-                        icon={ArrowLeft}
+                        icon={isRTL ? ArrowRight : ArrowLeft}
                         iconPosition="left"
-                        style={styles.backButton}
+                        style={[styles.backButton, isRTL && styles.backButtonRtl]}
                     />
                     <View style={styles.header}>
                         <Logo size="md" />
                     </View>
                     <View style={styles.content}>
-                        <Text style={styles.title}>New Password</Text>
-                        <Text style={styles.subtitle}>
-                            Please enter and confirm your new password below.
+                        <Text style={[styles.title, isRTL && styles.rtlTitle]}>{t('auth.new_password_title')}</Text>
+                        <Text style={[styles.subtitle, isRTL && styles.rtlText]}>
+                            {t('auth.new_password_desc')}
                         </Text>
                         <BaseInput
-                            label="New Password"
-                            placeholder="••••••••"
+                            label={t('auth.new_password_label')}
+                            placeholder={t('auth.password_dots')}
                             icon={Lock}
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
                         />
                         <BaseInput
-                            label="Confirm New Password"
-                            placeholder="••••••••"
+                            label={t('auth.confirm_new_password_label')}
+                            placeholder={t('auth.password_dots')}
                             icon={Lock}
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
                             secureTextEntry
                         />
                         <BaseButton
-                            title="Reset Password"
+                            title={t('auth.reset_password_btn')}
                             onPress={handleResetPassword}
                             loading={loading}
                             style={styles.submitButton}

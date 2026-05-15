@@ -4,39 +4,43 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Gavel } from 'lucide-react-native';
 import { theme } from '~/constants/theme';
 import BackButton from '~/components/common/BackButton';
+import { useLanguage } from '~/context/LanguageContext';
 
 export default function TermsScreen() {
+    const { t, isRTL } = useLanguage();
+    
     const sections = [
         {
-            title: '1. Acceptance of Terms',
-            content: 'By accessing and using Apex, you agree to bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our services.'
+            title: t('terms.section_1_title'),
+            content: t('terms.section_1_content')
         },
         {
-            title: '2. Use of Services',
-            content: 'Apex provides tools for construction estimation and project management. You agree to use these services only for lawful purposes and in accordance with these Terms.'
+            title: t('terms.section_2_title'),
+            content: t('terms.section_2_content')
         },
         {
-            title: '3. AI Usage Policy',
-            content: 'Our AI-powered estimation tools are designed to assist you. However, final verification of all calculations and estimates remains the sole responsibility of the user. Apex is not liable for errors in construction resulting from AI-generated data.'
+            title: t('terms.section_3_title'),
+            content: t('terms.section_3_content')
         },
         {
-            title: '4. User Accounts',
-            content: 'You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.'
+            title: t('terms.section_4_title'),
+            content: t('terms.section_4_content')
         },
         {
-            title: '5. Intellectual Property',
-            content: 'The Apex name, logo, and all related content and technology are the exclusive property of Apex. You may not reproduce or distribute any part of the service without prior written consent.'
+            title: t('terms.section_5_title'),
+            content: t('terms.section_5_content')
         },
         {
-            title: '6. Limitation of Liability',
-            content: 'Apex shall not be liable for any indirect, incidental, special, or consequential damages resulting from the use or inability to use our services.'
+            title: t('terms.section_6_title'),
+            content: t('terms.section_6_content')
         }
     ];
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
+            <View style={[styles.header, isRTL && styles.rtlRow]}>
                 <BackButton size={24} fallbackHref="/(auth)/login" />
-                <Text style={styles.headerTitle}>Terms & Conditions</Text>
+                <Text style={styles.headerTitle}>{t('terms.header_title')}</Text>
                 <View style={{ width: 44 }} />
             </View>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -44,18 +48,18 @@ export default function TermsScreen() {
                     <View style={styles.iconCircle}>
                         <Gavel size={32} color="white" />
                     </View>
-                    <Text style={styles.title}>Apex Terms of Service</Text>
-                    <Text style={styles.lastUpdated}>Last updated: March 7, 2026</Text>
+                    <Text style={styles.title}>{t('terms.page_title')}</Text>
+                    <Text style={styles.lastUpdated}>{t('terms.last_updated')}</Text>
                 </View>
                 {sections.map((section, index) => (
                     <View key={index} style={styles.section}>
-                        <Text style={styles.sectionTitle}>{section.title}</Text>
-                        <Text style={styles.sectionContent}>{section.content}</Text>
+                        <Text style={[styles.sectionTitle, isRTL && styles.rtlText]}>{section.title}</Text>
+                        <Text style={[styles.sectionContent, isRTL && styles.rtlText]}>{section.content}</Text>
                     </View>
                 ))}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>
-                        If you have any questions regarding these terms, please contact our legal team at legal@apex.com
+                        {t('terms.footer')}
                     </Text>
                 </View>
             </ScrollView>
@@ -130,11 +134,13 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#1e40af',
         marginBottom: 12,
+        textAlign: 'left',
     } as TextStyle,
     sectionContent: {
         fontSize: 15,
         color: '#334155',
         lineHeight: 24,
+        textAlign: 'left',
     } as TextStyle,
     footer: {
         padding: 20,
@@ -145,5 +151,11 @@ const styles = StyleSheet.create({
         color: '#64748b',
         textAlign: 'center',
         lineHeight: 20,
+    } as TextStyle,
+    rtlRow: {
+        flexDirection: 'row-reverse',
+    } as ViewStyle,
+    rtlText: {
+        textAlign: 'right',
     } as TextStyle,
 });

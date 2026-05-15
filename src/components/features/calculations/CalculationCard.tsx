@@ -8,6 +8,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import { HardHat, Clock, ChevronRight, Trash2 } from 'lucide-react-native';
 import { theme } from '../../../constants/theme';
+import { useLanguage } from '~/context/LanguageContext';
 
 export interface CalculationItem {
   id: string;
@@ -36,7 +37,8 @@ interface CalculationCardProps {
 
 export const CalculationCard = React.memo<CalculationCardProps>(
   ({ item, onPress, isReadOnly = false, onDelete, showChevron = true }) => {
-    const title = (item.categoryName || item.category || 'Calculation').toUpperCase();
+    const { t } = useLanguage();
+    const title = (item.categoryName || item.category || t('calc_details.calculation')).toUpperCase();
     const subTitle = item.formulaName || item.type || item.subCategory || '';
     const dateStr = new Date(item.createdAt || Date.now()).toLocaleDateString();
     const amount = Number(item.totalCost || item.result || item.leafTotal || 0).toLocaleString();

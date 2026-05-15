@@ -20,6 +20,7 @@ import { BaseButton } from '~/components/ui/BaseButton';
 import { useAuth } from '~/context/AuthContext';
 import { authApi } from '~/api/api';
 import { useFeedback } from '~/context/FeedbackContext';
+import { useLanguage } from '~/context/LanguageContext';
 
 const styles = StyleSheet.create({
   container: {
@@ -109,6 +110,12 @@ const styles = StyleSheet.create({
     ...theme.typography.bodyBold,
     color: theme.colors.primary,
   } as TextStyle,
+  rtlRow: {
+    flexDirection: 'row-reverse',
+  } as ViewStyle,
+  rtlText: {
+    textAlign: 'right',
+  } as TextStyle,
 });
 
 export default function RegisterScreen() {
@@ -121,6 +128,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { login, user, loading: authLoading } = useAuth();
   const { showFeedback } = useFeedback();
+  const { t, isRTL } = useLanguage();
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -138,17 +146,17 @@ export default function RegisterScreen() {
 
   const handleRegister = useCallback(async () => {
     if (!name || !email || !password) {
-      showFeedback({ title: 'Error', message: 'Please fill in all fields', type: 'warning' });
+      showFeedback({ title: t('common.error'), message: t('auth.fill_all_fields'), type: 'warning' });
       return;
     }
     if (password !== confirmPassword) {
-      showFeedback({ title: 'Error', message: 'Passwords do not match', type: 'warning' });
+      showFeedback({ title: t('common.error'), message: t('auth.passwords_no_match'), type: 'warning' });
       return;
     }
     if (!agreed) {
       showFeedback({
-        title: 'Error',
-        message: 'You must agree to the Terms and Conditions',
+        title: t('common.error'),
+        message: t('auth.agree_terms_required'),
         type: 'warning',
       });
       return;
@@ -166,14 +174,14 @@ export default function RegisterScreen() {
     } catch (error: any) {
       console.error('Registration failed:', error?.message);
       showFeedback({
-        title: 'Registration failed',
-        message: error?.response?.data?.message || error?.message || 'Server error',
+        title: t('auth.registration_failed'),
+        message: error?.response?.data?.message || error?.message || t('auth.server_error'),
         type: 'error',
       });
     } finally {
       setLoading(false);
     }
-  }, [name, email, password, confirmPassword, agreed, login, router, showFeedback]);
+  }, [name, email, password, confirmPassword, agreed, login, router, showFeedback, t]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -186,19 +194,19 @@ export default function RegisterScreen() {
             <Logo size="md" />
           </View>
           <View style={styles.content}>
-            <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>Start managing your construction projects today.</Text>
+            <Text style={[styles.title, isRTL && styles.rtlText]}>{t('auth.create_account')}</Text>
+            <Text style={[styles.subtitle, isRTL && styles.rtlText]}>{t('auth.create_account_desc')}</Text>
             <BaseInput
-              label="Full Name"
-              placeholder="John Doe"
+              label={t('auth.full_name_label')}
+              placeholder={t('auth.full_name_placeholder')}
               icon={User}
               value={name}
               onChangeText={setName}
               editable={!loading}
             />
             <BaseInput
-              label="Email Address"
-              placeholder="john@example.com"
+              label={t('auth.email_label')}
+              placeholder={t('auth.email_placeholder')}
               icon={Mail}
               value={email}
               onChangeText={setEmail}
@@ -206,8 +214,8 @@ export default function RegisterScreen() {
               keyboardType="email-address"
             />
             <BaseInput
-              label="Password"
-              placeholder="••••••••"
+              label={t('auth.password_label')}
+              placeholder={t('auth.password_dots')}
               icon={Lock}
               value={password}
               onChangeText={setPassword}
@@ -215,8 +223,8 @@ export default function RegisterScreen() {
               editable={!loading}
             />
             <BaseInput
-              label="Confirm Password"
-              placeholder="••••••••"
+              label={t('auth.confirm_password_label')}
+              placeholder={t('auth.password_dots')}
               icon={Lock}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -224,37 +232,37 @@ export default function RegisterScreen() {
               editable={!loading}
             />
             <Pressable
-              style={styles.agreeContainer}
+              style={[styles.agreeContainer, isRTL && styles.rtlRow]}
               onPress={handleToggleAgreed}
               disabled={loading}
             >
               <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
                 {agreed && <View style={styles.checkboxInner} />}
               </View>
-              <Text style={styles.agreeText}>
-                I agree to the{' '}
+              <Text style={[styles.agreeText, isRTL && styles.rtlText]}>
+                {t('auth.agree_prefix')}
                 <Text style={styles.linkTextInline} onPress={() => router.push('/(auth)/terms')}>
-                  Terms and Conditions
+                  {t('auth.terms_link')}
                 </Text>{' '}
-                and{' '}
+                {t('auth.and')}{' '}
                 <Text style={styles.linkTextInline} onPress={() => router.push('/(auth)/privacy')}>
-                  Privacy Policy
+                  {t('auth.privacy_link')}
                 </Text>
                 .
               </Text>
             </Pressable>
             <BaseButton
-              title="Create Account"
+              title={t('auth.create_account_btn')}
               onPress={handleRegister}
               loading={loading}
               icon={ArrowRight}
               style={styles.registerButton}
               disabled={loading || !name || !email || !password || !agreed}
             />
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
+            <View style={[styles.footer, isRTL && styles.rtlRow]}>
+              <Text style={styles.footerText}>{t('auth.already_have_account')}</Text>
               <Pressable onPress={handleLoginLink} disabled={loading}>
-                <Text style={styles.linkText}>Login</Text>
+                <Text style={styles.linkText}>{t('auth.login')}</Text>
               </Pressable>
             </View>
           </View>
@@ -263,3 +271,4 @@ export default function RegisterScreen() {
     </SafeAreaView>
   );
 }
+

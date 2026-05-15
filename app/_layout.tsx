@@ -182,15 +182,15 @@ function RootLayoutNav() {
 export default function Layout() {
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <FeedbackProvider>
-                <AuthProvider>
-                    <LanguageProvider>
+            <LanguageProvider>
+                <FeedbackProvider>
+                    <AuthProvider>
                         <SubscriptionProvider>
                             <RootLayoutNav />
                         </SubscriptionProvider>
-                    </LanguageProvider>
-                </AuthProvider>
-            </FeedbackProvider>
+                    </AuthProvider>
+                </FeedbackProvider>
+            </LanguageProvider>
         </GestureHandlerRootView>
     );
 }

@@ -11,6 +11,7 @@ import { CheckCircle, Building2, Calendar } from 'lucide-react-native';
 import type { Project } from '~/api/types';
 import { theme } from '~/constants/theme';
 import { resolveImageUrl, FALLBACK_IMAGE } from '~/utils/imageResolver';
+import { useLanguage } from '~/context/LanguageContext';
 
 interface CardProps {
   project: Project;
@@ -18,6 +19,7 @@ interface CardProps {
 
 export const ProjectCard: React.FC<CardProps> = ({ project }) => {
   const router = useRouter();
+  const { t } = useLanguage();
   const [imageError, setImageError] = useState(false);
   const isActive = project.status === 'active';
 
@@ -28,7 +30,7 @@ export const ProjectCard: React.FC<CardProps> = ({ project }) => {
     console.log(`[ProjectCard] "${project.name}" | imageUrl=${project.imageUrl} | resolved=${finalUri}`);
   }
 
-  const clientName = 'Apex Client';
+  const clientName = t('common.apex_client') || 'Apex Client';
   const displayDate = new Date(project.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -62,12 +64,12 @@ export const ProjectCard: React.FC<CardProps> = ({ project }) => {
           {isActive ? (
             <>
               <View style={styles.dot} />
-              <Text style={styles.badgeText}>ACTIVE</Text>
+              <Text style={styles.badgeText}>{t('projects.status_active').toUpperCase()}</Text>
             </>
           ) : (
             <>
               <CheckCircle size={12} color="#fff" />
-              <Text style={styles.badgeText}>COMPLETED</Text>
+              <Text style={styles.badgeText}>{t('projects.status_completed').toUpperCase()}</Text>
             </>
           )}
         </View>
@@ -85,7 +87,7 @@ export const ProjectCard: React.FC<CardProps> = ({ project }) => {
 
         {/* DESCRIPTION */}
         <Text style={styles.description} numberOfLines={2}>
-          {project.description || 'No description provided for this project.'}
+          {project.description || t('common.no_description')}
         </Text>
 
         {/* FOOTER */}

@@ -135,6 +135,7 @@ export interface RawCalculationResult {
   results?: Record<string, number>;
   intermediate_results: RawIntermediateResult[];
   material_lines: RawMaterialLine[];
+  service_lines?: any[];
   total_cost: number;
 }
 
@@ -192,6 +193,7 @@ export interface RawSavedLeafCalculation {
   created_at: string;
   leaf_total: number;
   material_lines: RawMaterialLine[];
+  service_lines?: any[];
 }
 
 // 🤖 AI Assistant (Raw)
@@ -369,6 +371,7 @@ export interface CalculationResult {
   results: Record<string, number>;
   intermediateResults: IntermediateResult[];
   materialLines: MaterialLine[];
+  serviceLines?: any[];
   totalCost: number;
 }
 
@@ -417,6 +420,7 @@ export interface SavedLeafCalculation {
   createdAt: string;
   leafTotal: number;
   materialLines: MaterialLine[];
+  serviceLines?: any[];
 }
 
 // 💳 Subscription (Clean)

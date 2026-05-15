@@ -22,6 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react-native';
 import { theme } from '~/constants/theme';
+import { useLanguage } from '~/context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -56,6 +57,7 @@ export const AppFeedback: React.FC<AppFeedbackProps> = ({
   autoClose = false,
   autoCloseDuration = 3000,
 }) => {
+  const { t } = useLanguage();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
@@ -149,7 +151,7 @@ export const AppFeedback: React.FC<AppFeedbackProps> = ({
             {loading && (
               <View style={styles.loadingArea}>
                 <ActivityIndicator color={statusTheme.color} />
-                <Text style={[styles.loadingText, { color: statusTheme.color }]}>Processing...</Text>
+                <Text style={[styles.loadingText, { color: statusTheme.color }]}>{t('common.processing') || 'Processing...'}</Text>
               </View>
             )}
           </View>

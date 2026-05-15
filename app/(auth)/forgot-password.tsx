@@ -10,7 +10,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Mail, ArrowLeft } from 'lucide-react-native';
+import { Mail, ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { theme } from '~/constants/theme';
 import { Logo } from '~/components/ui/Logo';
@@ -18,6 +18,7 @@ import { BaseInput } from '~/components/ui/BaseInput';
 import { BaseButton } from '~/components/ui/BaseButton';
 import { authApi } from '~/api/api';
 import { useFeedback } from '~/context/FeedbackContext';
+import { useLanguage } from '~/context/LanguageContext';
 
 const styles = StyleSheet.create({
   container: {
@@ -37,6 +38,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: theme.spacing.xl,
     paddingHorizontal: 0,
+  } as ViewStyle,
+  backButtonRtl: {
+    alignSelf: 'flex-end',
   } as ViewStyle,
   header: {
     marginBottom: theme.spacing.xxl,
@@ -60,6 +64,9 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: theme.spacing.lg,
   } as ViewStyle,
+  rtlText: {
+    textAlign: 'right',
+  } as TextStyle,
 });
 
 export default function ForgotPasswordScreen() {
@@ -67,6 +74,7 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const { showFeedback } = useFeedback();
   const router = useRouter();
+  const { t, isRTL } = useLanguage();
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -75,29 +83,29 @@ export default function ForgotPasswordScreen() {
 
   const handleResetRequest = useCallback(async () => {
     if (!email) {
-      showFeedback({ title: 'Error', message: 'Please enter your email address', type: 'warning' });
+      showFeedback({ title: t('common.error'), message: t('auth.enter_email'), type: 'warning' });
       return;
     }
     try {
       setLoading(true);
       await authApi.forgotPassword(email);
       showFeedback({
-        title: 'OTP Sent',
-        message: 'A 6-digit verification code has been sent to your email.',
+        title: t('auth.otp_sent'),
+        message: t('auth.otp_sent_desc'),
         type: 'success',
         onPrimary: () => router.push(`/verify-otp?email=${encodeURIComponent(email)}`),
       });
     } catch (error: any) {
       console.error('Forgot password failed:', error.response?.data?.message || error.message);
       showFeedback({
-        title: 'Error',
-        message: error?.response?.data?.message || error?.message || 'Something went wrong',
+        title: t('common.error'),
+        message: error?.response?.data?.message || error?.message || t('auth.something_went_wrong'),
         type: 'error',
       });
     } finally {
       setLoading(false);
     }
-  }, [email, router, showFeedback]);
+  }, [email, router, showFeedback, t]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,24 +118,24 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <BaseButton
-            title="Back to login"
+            title={t('auth.back_to_login')}
             onPress={handleBack}
             variant="ghost"
-            icon={ArrowLeft}
-            style={styles.backButton}
+            icon={isRTL ? ArrowRight : ArrowLeft}
+            style={[styles.backButton, isRTL && styles.backButtonRtl]}
             disabled={loading}
           />
           <View style={styles.header}>
             <Logo size="md" />
           </View>
           <View style={styles.content}>
-            <Text style={styles.title}>Forgot password?</Text>
-            <Text style={styles.subtitle}>
-              Enter your email and we'll send you a link to reset your password.
+            <Text style={[styles.title, isRTL && styles.rtlText]}>{t('auth.forgot_password_title')}</Text>
+            <Text style={[styles.subtitle, isRTL && styles.rtlText]}>
+              {t('auth.forgot_password_desc')}
             </Text>
             <BaseInput
-              label="Email Address"
-              placeholder="engineer@example.com"
+              label={t('auth.email_label')}
+              placeholder={t('auth.email_placeholder')}
               icon={Mail}
               value={email}
               onChangeText={setEmail}
@@ -137,7 +145,7 @@ export default function ForgotPasswordScreen() {
               editable={!loading}
             />
             <BaseButton
-              title="Send Reset Link"
+              title={t('auth.send_reset_link')}
               onPress={handleResetRequest}
               loading={loading}
               style={styles.submitButton}

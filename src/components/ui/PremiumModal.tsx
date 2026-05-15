@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Crown, X, ArrowRight } from 'lucide-react-native';
+import { useLanguage } from '~/context/LanguageContext';
 
 interface PremiumModalProps {
   visible: boolean;
@@ -23,9 +24,13 @@ export function PremiumModal({
   visible,
   onClose,
   onUpgrade,
-  title = 'Limit Reached',
-  description = 'You have reached the maximum number of projects for your current plan. Upgrade to unlock unlimited projects and advanced features.',
+  title,
+  description,
 }: PremiumModalProps) {
+  const { t } = useLanguage();
+  
+  const displayTitle = title || t('premium.limit_reached');
+  const displayDescription = description || t('premium.limit_desc');
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -39,26 +44,26 @@ export function PremiumModal({
             <Crown size={40} color="#eab308" />
           </View>
           
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.description}>{description}</Text>
+          <Text style={styles.title}>{displayTitle}</Text>
+          <Text style={styles.description}>{displayDescription}</Text>
           
           <View style={styles.featuresList}>
             <View style={styles.featureRow}>
               <Text style={styles.check}>✓</Text>
-              <Text style={styles.featureText}>Unlimited Projects</Text>
+              <Text style={styles.featureText}>{t('premium.unlimited_projects')}</Text>
             </View>
             <View style={styles.featureRow}>
               <Text style={styles.check}>✓</Text>
-              <Text style={styles.featureText}>Advanced PDF Exports</Text>
+              <Text style={styles.featureText}>{t('premium.advanced_pdf')}</Text>
             </View>
             <View style={styles.featureRow}>
               <Text style={styles.check}>✓</Text>
-              <Text style={styles.featureText}>Premium Materials Access</Text>
+              <Text style={styles.featureText}>{t('premium.premium_materials')}</Text>
             </View>
           </View>
 
           <Pressable style={styles.upgradeBtn} onPress={onUpgrade}>
-            <Text style={styles.upgradeBtnText}>Upgrade Plan</Text>
+            <Text style={styles.upgradeBtnText}>{t('premium.upgrade_plan')}</Text>
             <ArrowRight size={20} color="#fff" />
           </Pressable>
         </View>

@@ -32,7 +32,7 @@ type Message = {
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { language } = useLanguage();
+  const { language, t, isRTL } = useLanguage();
   const {
     canUseAI,
     remainingAIRequests,
@@ -50,7 +50,7 @@ export default function ChatScreen() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I am your Apex AI assistant. How can I help you with your construction project today?'
+      content: t('chat.greeting') || 'Hello! I am your Apex AI assistant. How can I help you with your construction project today?'
     }
   ]);
   const [inputText, setInputText] = useState('');
@@ -65,8 +65,8 @@ export default function ChatScreen() {
   }, []);
 
   const clearChat = useCallback(() => {
-    setMessages([{ id: Date.now().toString(), role: 'assistant', content: 'Chat history cleared. How can I help you now?' }]);
-  }, []);
+    setMessages([{ id: Date.now().toString(), role: 'assistant', content: t('chat.cleared') || 'Chat history cleared. How can I help you now?' }]);
+  }, [t]);
 
   const handleSuggestion = useCallback(async (question: AIQuestion) => {
     const displayText = question.language.en || question.language.ar;
@@ -75,7 +75,7 @@ export default function ChatScreen() {
     setIsLoading(true);
     try {
       const faqResult = await chatApi.getFAQAnswer(question.id, language);
-      const answerText = (language === 'ar' ? faqResult.answer?.ar : faqResult.answer?.en) || faqResult.answer?.en || "I couldn't find an answer for that question.";
+      const answerText = (language === 'ar' ? faqResult.answer?.ar : faqResult.answer?.en) || faqResult.answer?.en || t('chat.no_answer') || "I couldn't find an answer for that question.";
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -96,12 +96,12 @@ export default function ChatScreen() {
     // Client-side limit gate — fail fast before hitting the server
     if (!canUseAI) {
       showFeedback({
-        title: isSubscriptionActive ? 'AI Limit Reached' : 'Subscription Required',
+        title: isSubscriptionActive ? (t('chat.ai_limit_title') || 'AI Limit Reached') : (t('chat.subscription_required_title') || 'Subscription Required'),
         message: isSubscriptionActive
-          ? `You have used all ${aiLimit} AI requests for this billing cycle. Upgrade your plan or wait for the next renewal.`
-          : 'Activate a subscription to use the AI expert.',
+          ? (t('chat.ai_limit_msg')?.replace('{limit}', aiLimit.toString()) || `You have used all ${aiLimit} AI requests for this billing cycle. Upgrade your plan or wait for the next renewal.`)
+          : (t('chat.subscription_required_msg') || 'Activate a subscription to use the AI expert.'),
         type: 'subscription',
-        primaryText: 'View Plans',
+        primaryText: t('common.view_plans') || 'View Plans',
       });
       return;
     }
@@ -117,7 +117,7 @@ export default function ChatScreen() {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.message || "I'm sorry, I couldn't process that request.",
+        content: response.message || t('chat.no_process') || "I'm sorry, I couldn't process that request.",
       }]);
     } catch (err: any) {
       // Server enforced the cap (LIMIT_REACHED / 403) — sync local usage from server
@@ -129,13 +129,13 @@ export default function ChatScreen() {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `You've reached your AI request limit (${aiLimit}). Upgrade your plan to keep chatting.`,
+          content: t('chat.limit_reached_msg')?.replace('{limit}', aiLimit.toString()) || `You've reached your AI request limit (${aiLimit}). Upgrade your plan to keep chatting.`,
         }]);
       } else {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "Sorry, I'm having trouble connecting to the expert brain right now. Please try again later."
+          content: t('chat.connection_error') || "Sorry, I'm having trouble connecting to the expert brain right now. Please try again later."
         }]);
       }
     } finally {
@@ -145,7 +145,7 @@ export default function ChatScreen() {
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isUser = item.role === 'user';
-    const isArabic = /[\u0600-\u06FF]/.test(item.content);
+    const isArabic = isRTL || /[\u0600-\u06FF]/.test(item.content);
 
     return (
       <View style={[
@@ -215,8 +215,8 @@ export default function ChatScreen() {
               <Zap size={14} color={isLimitReached ? theme.colors.error : theme.colors.primary} />
               <Text style={[styles.usageText, isLimitReached && styles.usageTextBlocked]}>
                 {isLimitReached
-                  ? `AI limit reached — ${aiUsed}/${aiLimit} used`
-                  : `${remainingAIRequests} of ${aiLimit} AI requests remaining`}
+                  ? (t('chat.ai_limit_used')?.replace('{used}', aiUsed.toString()).replace('{limit}', aiLimit.toString()) || `AI limit reached — ${aiUsed}/${aiLimit} used`)
+                  : (t('chat.ai_remaining')?.replace('{remaining}', remainingAIRequests.toString()).replace('{limit}', aiLimit.toString()) || `${remainingAIRequests} of ${aiLimit} AI requests remaining`)}
               </Text>
             </View>
           )}
@@ -225,7 +225,7 @@ export default function ChatScreen() {
               style={styles.input}
               value={inputText}
               onChangeText={setInputText}
-              placeholder={isLimitReached ? 'AI limit reached for this cycle…' : 'Ask anything about construction...'}
+              placeholder={isLimitReached ? (t('chat.placeholder_limit') || 'AI limit reached for this cycle…') : (t('chat.placeholder') || 'Ask anything about construction...')}
               placeholderTextColor={theme.colors.textMuted}
               multiline
               maxLength={1000}

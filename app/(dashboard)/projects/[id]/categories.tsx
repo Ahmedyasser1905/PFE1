@@ -15,6 +15,7 @@ import { estimationApi } from '~/api/api';
 import { theme } from '~/constants/theme';
 import type { Category, SavedLeafCalculation } from '~/api/types';
 import { logger, parseError } from '~/utils/errorHandler';
+import { useLanguage } from '~/context/LanguageContext';
 
 // ─────────────────────────────────────────────
 // ICON RESOLVER
@@ -54,6 +55,7 @@ const CategoryCard: React.FC<{
   calcCount: number;
 }> = React.memo(({ item, onPress, calcCount }) => {
   const isLeaf = item.categoryLevel === 'LEAF';
+  const { t, isArabic } = useLanguage();
 
   return (
     <Pressable
@@ -63,12 +65,16 @@ const CategoryCard: React.FC<{
       <View style={styles.iconContainer}>
         {resolveIcon(item.icon)}
       </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{item.nameEn}</Text>
-      <Text style={styles.cardSubtitle} numberOfLines={1}>{item.nameAr}</Text>
+      <Text style={styles.cardTitle} numberOfLines={2}>
+        {isArabic && item.nameAr ? item.nameAr : item.nameEn}
+      </Text>
+      {!isArabic && item.nameAr && (
+        <Text style={styles.cardSubtitle} numberOfLines={1}>{item.nameAr}</Text>
+      )}
       {isLeaf && (
         <View style={[styles.countBadge, calcCount > 0 ? styles.countBadgeActive : styles.countBadgeEmpty]}>
           <Text style={[styles.countText, calcCount > 0 ? styles.countTextActive : styles.countTextEmpty]}>
-            {calcCount > 0 ? `${calcCount} Calcs` : 'None'}
+            {calcCount > 0 ? `${calcCount} ${t('projects.calcs_short', { defaultValue: 'Calcs' })}` : t('common.none', { defaultValue: 'None' })}
           </Text>
         </View>
       )}
@@ -92,6 +98,8 @@ export default function CategoriesScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const { t, isRTL, isArabic } = useLanguage();
 
   const fetchData = useCallback(async (isRefresh = false) => {
     try {
@@ -140,12 +148,12 @@ export default function CategoriesScreen() {
       setError(null);
     } catch (err: any) {
       logger.error('[Categories]', 'Load error:', err);
-      setError(parseError(err, 'Failed to sync with database'));
+      setError(parseError(err, t('projects.sync_failed', { defaultValue: 'Failed to sync with database' })));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [parentId, title, id]);
+  }, [parentId, title, id, t]);
 
   useEffect(() => {
     fetchData();
@@ -160,11 +168,13 @@ export default function CategoriesScreen() {
   const handleCategoryPress = useCallback(
     (item: Category) => {
       const level = (item.categoryLevel || '').toUpperCase();
+      const catTitle = isArabic && item.nameAr ? item.nameAr : item.nameEn;
+      
       if (level === 'LEAF') {
         // Route to the full API-powered calculation engine
         router.push({
           pathname: `/projects/${id}/category/${item.categoryId}`,
-          params: { id, categoryId: item.categoryId, title: item.nameEn }
+          params: { id, categoryId: item.categoryId, title: catTitle }
         });
       } else {
         // Drill deeper into sub-categories
@@ -173,12 +183,12 @@ export default function CategoriesScreen() {
           params: {
             id,
             parentId: item.categoryId,
-            title: item.nameEn,
+            title: catTitle,
           },
         });
       }
     },
-    [router, id]
+    [router, id, isArabic]
   );
 
   return (
@@ -194,7 +204,7 @@ export default function CategoriesScreen() {
             calcCount={getCalcCount(item.categoryId)}
           />
         )}
-        columnWrapperStyle={styles.row}
+        columnWrapperStyle={[styles.row, isRTL && styles.rtlRow]}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
@@ -205,11 +215,11 @@ export default function CategoriesScreen() {
         }
         ListHeaderComponent={
           <View style={styles.titleSection}>
-            <Text style={styles.breadcrumbTitle}>
-              {title ? `Categories / ${title}` : 'Select Category'}
+            <Text style={[styles.breadcrumbTitle, isRTL && styles.rtlText]}>
+              {title ? `${t('projects.categories', { defaultValue: 'Categories' })} / ${title}` : t('projects.select_category', { defaultValue: 'Select Category' })}
             </Text>
-            <Text style={styles.subtitle}>
-              Explore construction items and structural elements.
+            <Text style={[styles.subtitle, isRTL && styles.rtlText]}>
+              {t('projects.categories_desc', { defaultValue: 'Explore construction items and structural elements.' })}
             </Text>
           </View>
         }
@@ -217,20 +227,20 @@ export default function CategoriesScreen() {
           isLoading ? (
             <View style={styles.loader}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
-              <Text style={styles.loaderText}>Syncing Database...</Text>
+              <Text style={styles.loaderText}>{t('projects.syncing_db', { defaultValue: 'Syncing Database...' })}</Text>
             </View>
           ) : error ? (
             <View style={styles.errorContainer}>
               <Feather name="alert-circle" size={40} color="#FCA5A5" />
               <Text style={styles.errorMsg}>{error}</Text>
               <Pressable style={styles.retryBtn} onPress={() => fetchData()}>
-                <Text style={styles.retryBtnText}>Retry</Text>
+                <Text style={styles.retryBtnText}>{t('common.retry', { defaultValue: 'Retry' })}</Text>
               </Pressable>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
               <Feather name="box" size={40} color="#CBD5E1" />
-              <Text style={styles.emptyText}>No categories available</Text>
+              <Text style={styles.emptyText}>{t('projects.no_categories', { defaultValue: 'No categories available' })}</Text>
             </View>
           )
         }
@@ -335,5 +345,11 @@ const styles = StyleSheet.create({
   emptyText: { 
     ...theme.typography.bodyMedium,
     color: theme.colors.textMuted 
+  },
+  rtlRow: {
+    flexDirection: 'row-reverse',
+  },
+  rtlText: {
+    textAlign: 'right',
   },
 });

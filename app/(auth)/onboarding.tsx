@@ -15,8 +15,9 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '~/constants/theme';
 import { OnboardingCard } from '~/components/features/auth/OnboardingCard';
-import { Building2, HardHat, ShieldCheck, ChevronRight, PieChart } from 'lucide-react-native';
+import { Building2, HardHat, ShieldCheck, ChevronRight, ChevronLeft, PieChart } from 'lucide-react-native';
 import { storage } from '~/utils/storage';
+import { useLanguage } from '~/context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -28,8 +29,13 @@ const styles = StyleSheet.create({
     skipButton: {
         position: 'absolute',
         top: 60,
-        right: 30,
         zIndex: 10,
+    } as ViewStyle,
+    skipButtonLtr: {
+        right: 30,
+    } as ViewStyle,
+    skipButtonRtl: {
+        left: 30,
     } as ViewStyle,
     skipText: {
         fontSize: 16,
@@ -52,10 +58,16 @@ const styles = StyleSheet.create({
         paddingBottom: theme.spacing.xl,
         height: 100,
     } as ViewStyle,
+    footerRtl: {
+        flexDirection: 'row-reverse',
+    } as ViewStyle,
     pagination: {
         flexDirection: 'row',
         height: 64,
         alignItems: 'center',
+    } as ViewStyle,
+    paginationRtl: {
+        flexDirection: 'row-reverse',
     } as ViewStyle,
     dot: {
         height: 10,
@@ -81,40 +93,45 @@ const styles = StyleSheet.create({
 const SLIDES = [
     {
         id: '1',
-        title: 'Accurate Estimates',
-        subtitle: 'Calculate construction costs in real time with professional precision.',
+        titleKey: 'onboarding.slide1_title',
+        subtitleKey: 'onboarding.slide1_subtitle',
         icon: Building2,
     },
     {
         id: '2',
-        title: 'Project Management',
-        subtitle: 'Track your project progress and manage resources efficiently.',
+        titleKey: 'onboarding.slide2_title',
+        subtitleKey: 'onboarding.slide2_subtitle',
         icon: HardHat,
     },
     {
         id: '3',
-        title: 'Secure Documents',
-        subtitle: 'Store your estimates and invoices securely in the Apex cloud.',
+        titleKey: 'onboarding.slide3_title',
+        subtitleKey: 'onboarding.slide3_subtitle',
         icon: ShieldCheck,
     },
     {
         id: '4',
-        title: 'Detailed Analytics',
-        subtitle: 'Get comprehensive reports on spending and optimize your budgets.',
+        titleKey: 'onboarding.slide4_title',
+        subtitleKey: 'onboarding.slide4_subtitle',
         icon: PieChart,
     },
 ];
+
 export default function OnboardingScreen() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollX = useRef(new Animated.Value(0)).current;
     const slidesRef = useRef<FlatList>(null);
     const router = useRouter();
+    const { t, isRTL } = useLanguage();
+
     const viewableItemsChanged = useRef(({ viewableItems }: any) => {
         if (viewableItems && viewableItems.length > 0) {
             setCurrentIndex(viewableItems[0].index);
         }
     }).current;
+    
     const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+    
     const handleSkip = async () => {
         try {
             await storage.setItem('hasCompletedOnboarding_v6', 'true');
@@ -123,6 +140,7 @@ export default function OnboardingScreen() {
             console.log('Error @handleSkip', err);
         }
     };
+    
     const scrollTo = async () => {
         if (currentIndex < SLIDES.length - 1) {
             slidesRef.current?.scrollToIndex({ index: currentIndex + 1 });
@@ -135,22 +153,23 @@ export default function OnboardingScreen() {
             }
         }
     };
+
     return (
         <View style={styles.container}>
             <SafeAreaView style={{ flex: 1 }}>
                 <StatusBar barStyle="light-content" />
                 <TouchableOpacity 
-                    style={styles.skipButton}
+                    style={[styles.skipButton, isRTL ? styles.skipButtonRtl : styles.skipButtonLtr]}
                     onPress={handleSkip}
                 >
-                    <Text style={styles.skipText}>Skip</Text>
+                    <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
                 </TouchableOpacity>
                 <FlatList
                     data={SLIDES}
                     renderItem={({ item }) => (
                         <OnboardingCard
-                            title={item.title}
-                            subtitle={item.subtitle}
+                            title={t(item.titleKey)}
+                            subtitle={t(item.subtitleKey)}
                             illustration={
                                 <View style={styles.iconContainer}>
                                     <item.icon size={180} color="white" strokeWidth={1} />
@@ -176,9 +195,10 @@ export default function OnboardingScreen() {
                     maxToRenderPerBatch={4}
                     windowSize={5}
                     removeClippedSubviews={false}
+                    inverted={isRTL}
                 />
-                <View style={styles.footer}>
-                    <View style={styles.pagination}>
+                <View style={[styles.footer, isRTL && styles.footerRtl]}>
+                    <View style={[styles.pagination, isRTL && styles.paginationRtl]}>
                         {SLIDES.map((_, i) => {
                             const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
                             const dotWidth = scrollX.interpolate({
@@ -200,7 +220,11 @@ export default function OnboardingScreen() {
                         })}
                     </View>
                     <TouchableOpacity style={styles.nextButton} onPress={scrollTo}>
-                        <ChevronRight color={theme.colors.primary} size={32} />
+                        {isRTL ? (
+                            <ChevronLeft color={theme.colors.primary} size={32} />
+                        ) : (
+                            <ChevronRight color={theme.colors.primary} size={32} />
+                        )}
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

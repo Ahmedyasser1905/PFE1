@@ -52,6 +52,7 @@ import { ErrorScreen } from '~/components/ui/ErrorScreen';
 import { EmptyState } from '~/components/ui/EmptyState';
 import { useFeedback } from '~/context/FeedbackContext';
 import { resolveImageUrl, FALLBACK_IMAGE } from '~/utils/imageResolver';
+import { useLanguage } from '~/context/LanguageContext';
 
 // ─── Icon helpers ─────────────────────────────────────────────────────────────
 const getCategoryIcon = (name: string) => {
@@ -96,6 +97,7 @@ export default function ProjectDetailScreen() {
   } = useProjectDetail(id as string, localCalculations);
 
   const { showInfo, showSuccess, showWarning } = useFeedback();
+  const { t, isRTL } = useLanguage();
 
   useFocusEffect(
     useCallback(() => {
@@ -106,12 +108,12 @@ export default function ProjectDetailScreen() {
   // ─── Export PDF handler ──────────────────────────────────────────────────────
   const handleExportPDF = useCallback(async () => {
     if (!id) return;
-    showInfo('Export Report', 'Generate and send a PDF report for this project?', {
-      primaryText: 'Export',
+    showInfo(t('projects.export_report'), t('projects.export_report_desc'), {
+      primaryText: t('common.export', { defaultValue: 'Export' }),
       onPrimary: async () => {
         try {
           const result = await estimationApi.exportProject(id);
-          showSuccess('Success', result?.message || 'PDF report has been sent to your email.');
+          showSuccess(t('common.success'), result?.message || t('projects.export_success_desc'));
         } catch (err: any) {
           // Error already handled by API interceptor, but we can override or add context if needed
         }
@@ -122,13 +124,13 @@ export default function ProjectDetailScreen() {
   // ─── Delete leaf handler ────────────────────────────────────────────────────
   const handleDeleteLeaf = useCallback((projectDetailsId: string, categoryName: string) => {
     if (isCompleted) return;
-    showWarning('Delete Calculation', `Remove the "${categoryName}" calculation from this project?`, {
-      primaryText: 'Delete',
+    showWarning(t('projects.delete_calc'), t('projects.delete_calc_desc', { name: categoryName }), {
+      primaryText: t('common.delete', { defaultValue: 'Delete' }),
       onPrimary: async () => {
         try {
           await estimationApi.deleteLeaf(projectDetailsId);
           fetchData(); // Refresh to reflect changes
-          showSuccess('Deleted', 'Calculation removed successfully.');
+          showSuccess(t('common.deleted'), t('projects.calc_removed'));
         } catch (err: any) {
           // Error already handled by API interceptor
         }
@@ -141,7 +143,7 @@ export default function ProjectDetailScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading project...</Text>
+        <Text style={styles.loadingText}>{t('projects.loading')}</Text>
       </View>
     );
   }
@@ -151,7 +153,7 @@ export default function ProjectDetailScreen() {
     return (
       <ErrorScreen
         type={error?.includes('Network') ? 'network' : 'unknown'}
-        message={error || 'Project not found'}
+        message={error || t('projects.not_found')}
         onRetry={fetchData}
       />
     );
@@ -176,10 +178,10 @@ export default function ProjectDetailScreen() {
         <View style={styles.content}>
           {/* ── Title Section ── */}
           <View style={styles.titleSection}>
-            <Text style={styles.title}>{project.name}</Text>
-            <View style={styles.metaRow}>
+            <Text style={[styles.title, isRTL && { textAlign: 'right' }]}>{project.name}</Text>
+            <View style={[styles.metaRow, isRTL && { flexDirection: 'row-reverse' } as any]}>
               <View style={[styles.statusBadge, isCompleted ? styles.statusCompleted : styles.statusActive]}>
-                <Text style={styles.statusText}>{isCompleted ? 'COMPLETED' : 'ACTIVE'}</Text>
+                <Text style={styles.statusText}>{isCompleted ? t('projects.status_completed').toUpperCase() : t('projects.status_active').toUpperCase()}</Text>
               </View>
               <Text style={styles.metaText}>📋 {projectIdShort}</Text>
             </View>
@@ -202,24 +204,24 @@ export default function ProjectDetailScreen() {
 
           {/* ── Lock Banner (read-only guard) ── */}
           {isCompleted && (
-            <View style={styles.lockBanner}>
+            <View style={[styles.lockBanner, isRTL && { flexDirection: 'row-reverse' }]}>
               <Lock size={16} color={theme.colors.error} />
-              <Text style={styles.lockBannerText}>
-                This project is completed and locked — no modifications allowed.
+              <Text style={[styles.lockBannerText, isRTL && { textAlign: 'right' }]}>
+                {t('projects.project_locked')}
               </Text>
             </View>
           )}
 
           {/* ── Budget Card ── */}
           <View style={styles.budgetCard}>
-            <View style={styles.budgetHeader}>
+            <View style={[styles.budgetHeader, isRTL && { flexDirection: 'row-reverse' } as any]}>
               <TrendingUp size={18} color="rgba(255, 255, 255, 0.8)" />
-              <Text style={styles.budgetTitle}>BUDGET OVERVIEW</Text>
+              <Text style={[styles.budgetTitle, isRTL && { textAlign: 'right' }]}>{t('projects.budget_overview', { defaultValue: 'BUDGET OVERVIEW' })}</Text>
             </View>
-            <View style={styles.budgetContent}>
+            <View style={[styles.budgetContent, isRTL && { flexDirection: 'row-reverse' } as any]}>
               <View>
-                <Text style={styles.budgetMainValue}>DZD {totalCost}</Text>
-                <Text style={styles.budgetSubText}>Cumulative Project Cost</Text>
+                <Text style={[styles.budgetMainValue, isRTL && { textAlign: 'right' }]}>DZD {totalCost}</Text>
+                <Text style={[styles.budgetSubText, isRTL && { textAlign: 'right' }]}>{t('projects.cumulative_cost', { defaultValue: 'Cumulative Project Cost' })}</Text>
               </View>
               <View style={styles.budgetIconCircle}>
                 <DollarSign size={24} color={theme.colors.primary} />
@@ -230,23 +232,23 @@ export default function ProjectDetailScreen() {
           {/* ── Description ── */}
           {!!project.description && (
             <View style={styles.overviewCard}>
-              <Text style={styles.overviewLabel}>PROJECT OVERVIEW</Text>
-              <Text style={styles.overviewText}>{project.description}</Text>
+              <Text style={[styles.overviewLabel, isRTL && { textAlign: 'right' }]}>{t('projects.project_overview', { defaultValue: 'PROJECT OVERVIEW' })}</Text>
+              <Text style={[styles.overviewText, isRTL && { textAlign: 'right' }]}>{project.description}</Text>
             </View>
           )}
 
           {/* ── Stats ── */}
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
+          <View style={[styles.statsRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            <View style={[styles.statCard, isRTL && { flexDirection: 'row-reverse' }]}>
               <View>
-                <Text style={styles.statLabel}>Total Calculations</Text>
+                <Text style={styles.statLabel}>{t('projects.total_calcs', { defaultValue: 'Total Calculations' })}</Text>
                 <Text style={styles.statValue}>{leafCount}</Text>
               </View>
               <Grid3X3 size={22} color={theme.colors.primary} />
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, isRTL && { flexDirection: 'row-reverse' }]}>
               <View>
-                <Text style={styles.statLabel}>Active Categories</Text>
+                <Text style={styles.statLabel}>{t('projects.active_categories', { defaultValue: 'Active Categories' })}</Text>
                 <Text style={styles.statValue}>{categoryGroups.length}</Text>
               </View>
               <BarChart3 size={22} color={theme.colors.primary} />
@@ -257,9 +259,9 @@ export default function ProjectDetailScreen() {
           {!isCompleted && (
             <>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Start Calculation</Text>
+                <Text style={[styles.sectionTitle, isRTL && { textAlign: 'right' }]}>{t('projects.start_calc', { defaultValue: 'Start Calculation' })}</Text>
               </View>
-              <View style={styles.mainCategoriesRow}>
+              <View style={[styles.mainCategoriesRow, isRTL && { flexDirection: 'row-reverse' }]}>
                 {rootCategories.map((cat) => {
                   const Icon = getCategoryIcon(cat.nameEn);
                   const [color, bg] = getCategoryColor(cat.nameEn);
@@ -286,15 +288,15 @@ export default function ProjectDetailScreen() {
           )}
 
           {/* ── Saved Calculations (Category Groups) ── */}
-          <View style={styles.sectionHeaderHistory}>
-            <Text style={styles.sectionTitle}>Saved Calculations</Text>
+          <View style={[styles.sectionHeaderHistory, isRTL && { flexDirection: 'row-reverse' }]}>
+            <Text style={[styles.sectionTitle, isRTL && { textAlign: 'right' }]}>{t('projects.saved_calcs', { defaultValue: 'Saved Calculations' })}</Text>
           </View>
 
           {categoryGroups.length === 0 ? (
             <EmptyState
               icon={<LayoutGrid size={48} color="#94a3b8" />}
-              title="No calculations yet"
-              description={isCompleted ? "This project has no saved calculations." : "Select a category above to start your first estimation."}
+              title={t('projects.no_calcs')}
+              description={isCompleted ? t('projects.no_calcs_locked') : t('projects.no_calcs_active')}
             />
           ) : (
             categoryGroups.map((group, idx) => {
@@ -315,19 +317,19 @@ export default function ProjectDetailScreen() {
                     })
                   }
                 >
-                  <View style={styles.categoryCardTop}>
+                  <View style={[styles.categoryCardTop, isRTL && { flexDirection: 'row-reverse' }]}>
                     <View style={[styles.categoryIcon, { backgroundColor: iconBg }]}>
                       <Icon size={22} color={iconColor} />
                     </View>
-                    <Text style={styles.categoryCalcCount}>{group.count} CALCS</Text>
+                    <Text style={styles.categoryCalcCount}>{group.count} {t('projects.calcs_short', { defaultValue: 'CALCS' })}</Text>
                   </View>
                   <Text style={styles.categoryTitle}>{group.name}</Text>
                   <Text style={styles.categorySub} numberOfLines={1}>
                     {group.leaves.map((l) => l.formulaName).filter(Boolean).slice(0, 2).join(', ') ||
-                      'Estimation data'}
+                      t('projects.estimation_data', { defaultValue: 'Estimation data' })}
                   </Text>
                   {tags.length > 0 && (
-                    <View style={styles.tagsRow}>
+                    <View style={[styles.tagsRow, isRTL && { flexDirection: 'row-reverse' }]}>
                       {tags.map((tag, ti) => (
                         <View key={ti} style={styles.tag}>
                           <Text style={styles.tagText}>{tag.toUpperCase()}</Text>
@@ -351,7 +353,7 @@ export default function ProjectDetailScreen() {
                 })
               }
             >
-              <Text style={styles.viewAllText}>View all activity →</Text>
+              <Text style={styles.viewAllText}>{isRTL ? '← ' : ''}{t('projects.view_all_activity', { defaultValue: 'View all activity' })}{!isRTL ? ' →' : ''}</Text>
             </Pressable>
           )}
 
@@ -362,7 +364,7 @@ export default function ProjectDetailScreen() {
             activeOpacity={0.8}
           >
             <FileDown size={20} color={theme.colors.primary} />
-            <Text style={styles.exportBtnText}>Export PDF Report</Text>
+            <Text style={styles.exportBtnText}>{t('projects.export_pdf_report')}</Text>
           </TouchableOpacity>
 
           <Pressable

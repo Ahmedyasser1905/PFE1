@@ -10,7 +10,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ShieldCheck, ArrowLeft } from 'lucide-react-native';
+import { ShieldCheck, ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { theme } from '~/constants/theme';
 import { Logo } from '~/components/ui/Logo';
@@ -18,6 +18,7 @@ import { BaseInput } from '~/components/ui/BaseInput';
 import { BaseButton } from '~/components/ui/BaseButton';
 import { authApi } from '~/api/api';
 import { useFeedback } from '~/context/FeedbackContext';
+import { useLanguage } from '~/context/LanguageContext';
 
 const styles = StyleSheet.create({
   container: {
@@ -37,6 +38,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: theme.spacing.xl,
     paddingHorizontal: 0,
+  } as ViewStyle,
+  backButtonRtl: {
+    alignSelf: 'flex-end',
   } as ViewStyle,
   header: {
     marginBottom: theme.spacing.xxl,
@@ -60,6 +64,9 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: theme.spacing.lg,
   } as ViewStyle,
+  rtlText: {
+    textAlign: 'right',
+  } as TextStyle,
 });
 
 export default function VerifyOtpScreen() {
@@ -68,6 +75,7 @@ export default function VerifyOtpScreen() {
   const [loading, setLoading] = useState(false);
   const { showFeedback } = useFeedback();
   const router = useRouter();
+  const { t, isRTL } = useLanguage();
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -76,7 +84,7 @@ export default function VerifyOtpScreen() {
 
   const handleVerifyOtp = useCallback(async () => {
     if (!otp) {
-      showFeedback({ title: 'Error', message: 'Please enter the reset token', type: 'warning' });
+      showFeedback({ title: t('common.error'), message: t('auth.enter_reset_token'), type: 'warning' });
       return;
     }
     try {
@@ -90,14 +98,14 @@ export default function VerifyOtpScreen() {
     } catch (error: any) {
       console.error('Token verification failed:', error.response?.data?.message || error.message);
       showFeedback({
-        title: 'Error',
-        message: error?.response?.data?.message || error?.message || 'Invalid or expired token',
+        title: t('common.error'),
+        message: error?.response?.data?.message || error?.message || t('auth.invalid_expired_token'),
         type: 'error',
       });
     } finally {
       setLoading(false);
     }
-  }, [otp, email, router, showFeedback]);
+  }, [otp, email, router, showFeedback, t]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,22 +118,24 @@ export default function VerifyOtpScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <BaseButton
-            title="Back"
+            title={t('common.back')}
             onPress={handleBack}
             variant="ghost"
-            icon={ArrowLeft}
-            style={styles.backButton}
+            icon={isRTL ? ArrowRight : ArrowLeft}
+            style={[styles.backButton, isRTL && styles.backButtonRtl]}
             disabled={loading}
           />
           <View style={styles.header}>
             <Logo size="md" />
           </View>
           <View style={styles.content}>
-            <Text style={styles.title}>Verify Token</Text>
-            <Text style={styles.subtitle}>Enter the reset token sent to {email}.</Text>
+            <Text style={[styles.title, isRTL && styles.rtlText]}>{t('auth.verify_token_title')}</Text>
+            <Text style={[styles.subtitle, isRTL && styles.rtlText]}>
+              {t('auth.verify_token_desc', { email: String(email) })}
+            </Text>
             <BaseInput
-              label="Reset Token"
-              placeholder="Enter your hex token"
+              label={t('auth.reset_token_label')}
+              placeholder={t('auth.reset_token_placeholder')}
               icon={ShieldCheck}
               value={otp}
               onChangeText={setOtp}
@@ -134,7 +144,7 @@ export default function VerifyOtpScreen() {
               editable={!loading}
             />
             <BaseButton
-              title="Verify Code"
+              title={t('auth.verify_code_btn')}
               onPress={handleVerifyOtp}
               loading={loading}
               style={styles.submitButton}
